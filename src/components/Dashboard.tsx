@@ -2,12 +2,10 @@ import React, { useState } from 'react';
 import { curriculum, Mission } from '../data/curriculum';
 import Terminal from './Terminal';
 import Wizard from './Wizard';
-import { useAuth } from './Auth';
 
 type ViewMode = 'missions' | 'wizard-linux' | 'wizard-powershell' | 'wizard-kql';
 
 const Dashboard: React.FC = () => {
-  const { logout } = useAuth();
   const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
   const [completedMissions, setCompletedMissions] = useState<string[]>([]);
   const [xp, setXp] = useState(0);
@@ -31,15 +29,8 @@ const Dashboard: React.FC = () => {
     <div className="flex h-screen bg-cyber-bg">
       <aside className="w-64 bg-cyber-card border-r border-cyber-border flex flex-col">
         <div className="p-4 border-b border-cyber-border">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-cyber-primary">TermQuest</h1>
-              <p className="text-xs text-cyber-muted">Interactive Shell RPG</p>
-            </div>
-            <button onClick={logout} className="p-2 text-cyber-muted hover:text-white" title="Logout">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-            </button>
-          </div>
+          <h1 className="text-2xl font-bold text-cyber-primary">TermQuest</h1>
+          <p className="text-xs text-cyber-muted">Interactive Shell RPG</p>
         </div>
         <div className="flex-1 overflow-y-auto">
           <nav className="p-3 space-y-1">
