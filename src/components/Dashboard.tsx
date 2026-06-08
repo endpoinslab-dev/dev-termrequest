@@ -7,7 +7,7 @@ import { useAuth } from './Auth';
 type ViewMode = 'missions' | 'wizard-linux' | 'wizard-powershell' | 'wizard-kql';
 
 const Dashboard: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
   const [completedMissions, setCompletedMissions] = useState<string[]>([]);
   const [xp, setXp] = useState(0);
