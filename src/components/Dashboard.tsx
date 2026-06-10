@@ -1,16 +1,47 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { curriculum, Mission } from '../data/curriculum';
 import Terminal from './Terminal';
 import Wizard from './Wizard';
+import { useAuth } from './Auth';
 
 type ViewMode = 'missions' | 'wizard-linux' | 'wizard-powershell' | 'wizard-kql';
 
+const LogoutBtn: React.FC = () => {
+  const { user, logout } = useAuth();
+  return (
+    <button onClick={logout} className="text-xs text-cyber-muted hover:text-white" title="Logout">
+      {user?.name} (Logout)
+    </button>
+  );
+};
+
 const Dashboard: React.FC = () => {
+  const { user } = useAuth();
   const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
   const [completedMissions, setCompletedMissions] = useState<string[]>([]);
   const [xp, setXp] = useState(0);
+  const [loaded, setLoaded] = useState(false);
   const [currentLevel, setCurrentLevel] = useState(0);
   const [viewMode, setViewMode] = useState<ViewMode>('missions');
+
+  const storageKey = `progress_${user?.email}`;
+
+  useEffect(() => {
+    if (!user) return;
+    const saved = localStorage.getItem(storageKey);
+    if (saved) {
+      const data = JSON.parse(saved);
+      setCompletedMissions(data.completed || []);
+      setXp(data.xp || 0);
+    }
+    setLoaded(true);
+  }, [user?.email]);
+
+  useEffect(() => {
+    if (!user || !loaded) return;
+    localStorage.setItem(storageKey, JSON.stringify({ completed: completedMissions, xp }));
+  }, [completedMissions, xp, loaded]);
+
   const levelInfo = curriculum[currentLevel];
 
   const isMissionAvailable = (mission: Mission) => {
@@ -107,6 +138,10 @@ const Dashboard: React.FC = () => {
       </aside>
 
       <main className="flex-1 flex flex-col min-h-0">
+        <div className="flex justify-end p-3 pr-4 bg-cyber-bg">
+          <LogoutBtn />
+        </div>
+
         {viewMode === 'wizard-linux' ? (
           <Wizard trackId="linux" onBack={() => setViewMode('missions')} />
         ) : viewMode === 'wizard-powershell' ? (
