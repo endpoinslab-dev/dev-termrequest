@@ -18,7 +18,7 @@ export interface WizardModule {
 }
 
 export interface WizardTrack {
-  id: "linux" | "powershell" | "kql";
+  id: "linux" | "powershell" | "kql" | "vim";
   title: string;
   description: string;
   modules: WizardModule[];
@@ -2151,6 +2151,612 @@ export const wizardTracks: WizardTrack[] = [
               { flag: "let X = Table | ...;", description: "Define a tabular view (subquery)" },
               { flag: "let F = (x: T) { expr };", description: "Define a reusable function" },
               { flag: "let X = view() { ... };", description: "Define a view usable across union clauses" }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    id: "vim",
+    title: "VIM Wizard",
+    description: "Master VIM — the modal editor that lives in the terminal. Navigation, editing, and power moves.",
+    modules: [
+      {
+        id: "vim-nav",
+        title: "Navigation",
+        description: "Move around files without touching the mouse. Speed is everything.",
+        commands: [
+          {
+            command: "h j k l",
+            description: "Basic cursor movement — left, down, up, right. Keep your fingers on the home row.",
+            syntax: "h / j / k / l",
+            syntaxParts: [
+              { label: "command", value: "h", color: "text-cyber-primary" },
+              { label: "or", value: "j  k  l", color: "text-cyber-accent" }
+            ],
+            example: "  k\nh   l\n  j\n\nPress j repeatedly to move down line by line. Use k to go back up.\nCombine with counts: 10j moves down 10 lines.",
+            stepByStep: [
+              "h moves left one character",
+              "j moves down one line",
+              "k moves up one line",
+              "l moves right one character",
+              "Prefix with a number: 5j moves down 5 lines, 3h moves left 3 chars",
+              "Never reach for arrow keys — h/j/k/l are the path to VIM speed"
+            ],
+            tryIt: "Open a file and practice moving with h/j/k/l for 5 minutes without touching arrows",
+            commonFlags: [
+              { flag: "{count}h", description: "Move left count characters" },
+              { flag: "{count}j", description: "Move down count lines" },
+              { flag: "{count}k", description: "Move up count lines" },
+              { flag: "{count}l", description: "Move right count characters" }
+            ]
+          },
+          {
+            command: "w b 0 $",
+            description: "Word jumps and line boundaries — move by words or snap to start/end of line.",
+            syntax: "w / b / 0 / $",
+            syntaxParts: [
+              { label: "command", value: "w  b  0  $", color: "text-cyber-primary" }
+            ],
+            example: "Start: Hello World from VIM\nw -> Hello World from VIM\n     ^   ^     ^   ^\nb -> Hello World from VIM\n         ^   ^     ^\n0 -> ^ (start of line)\n$ ->                    ^ (end of line)",
+            stepByStep: [
+              "w — jump forward to the start of the next word",
+              "b — jump backward to the start of the previous word",
+              "e — jump to the end of the current (or next) word",
+              "0 — jump to the very first character of the line",
+              "$ — jump to the last character of the line",
+              "^ — jump to the first NON-whitespace character of the line",
+              "Combine with counts: 3w jumps forward 3 words"
+            ],
+            tryIt: "Practice: type 0 then w repeatedly to bounce through words, then $ to reach the end",
+            commonFlags: [
+              { flag: "w", description: "Forward to start of next word" },
+              { flag: "b", description: "Backward to start of previous word" },
+              { flag: "e", description: "Forward to end of word" },
+              { flag: "0", description: "Jump to column 0 (first character of line)" },
+              { flag: "$", description: "Jump to end of line" },
+              { flag: "^", description: "Jump to first non-whitespace character" }
+            ]
+          },
+          {
+            command: "gg G Ctrl+d Ctrl+u",
+            description: "Big jumps — go to top, bottom, or scroll by pages within a file.",
+            syntax: "gg / G / Ctrl+d / Ctrl+u",
+            syntaxParts: [
+              { label: "command", value: "gg  G  Ctrl+d  Ctrl+u", color: "text-cyber-primary" }
+            ],
+            example: "gg — jump to line 1 (top of file)\n42gg or 42G — jump to line 42\nG — jump to the last line\nCtrl+d — scroll down half a page\nCtrl+u — scroll up half a page\nCtrl+f — scroll forward a full page\nCtrl+b — scroll backward a full page",
+            stepByStep: [
+              "gg — go to the very first line of the file",
+              "G — go to the very last line of the file",
+              "{count}gg or {count}G — go to a specific line number",
+              "Ctrl+d — scroll DOWN half a page (Down)",
+              "Ctrl+u — scroll UP half a page (Up)",
+              "Ctrl+f — scroll Forward a full page",
+              "Ctrl+b — scroll Backward a full page",
+              "zz — center the cursor on screen (great after a jump)"
+            ],
+            tryIt: "Open a long file, press G to go to the end, then gg to go back to the top",
+            commonFlags: [
+              { flag: "gg", description: "Go to first line of file" },
+              { flag: "G", description: "Go to last line of file" },
+              { flag: "{n}G", description: "Go to line number n" },
+              { flag: "Ctrl+d", description: "Scroll down half page" },
+              { flag: "Ctrl+u", description: "Scroll up half page" },
+              { flag: "zz", description: "Center cursor on screen" }
+            ]
+          },
+          {
+            command: "% { } [ ]",
+            description: "Matching pairs and block navigation — jump between braces, brackets, and paragraphs.",
+            syntax: "% / { / } / [ / ]",
+            syntaxParts: [
+              { label: "command", value: "%  {  }  [  ]", color: "text-cyber-primary" }
+            ],
+            example: "function hello() {          // cursor on {\n  console.log('hi!');      // press % to jump to }\n}                            // press % again to jump back",
+            stepByStep: [
+              "% — jump between matching pairs: (), {}, [], /* */",
+              "{ — jump backward to the beginning of the current paragraph",
+              "} — jump forward to the beginning of the next paragraph",
+              "[( — jump backward to the previous unmatched (",
+              "]) — jump forward to the next unmatched )",
+              "[{ — jump backward to the previous unmatched {",
+              "]} — jump forward to the next unmatched }",
+              "Great for navigating structured code and config files"
+            ],
+            tryIt: "Put your cursor on a { and press % to find its matching }",
+            commonFlags: [
+              { flag: "%", description: "Jump to matching pair () {} []" },
+              { flag: "{", description: "Jump backward to paragraph start" },
+              { flag: "}", description: "Jump forward to paragraph start" },
+              { flag: "[( ])", description: "Jump between unmatched parentheses" }
+            ]
+          }
+        ]
+      },
+      {
+        id: "vim-edit",
+        title: "Editing & Saving",
+        description: "Insert, delete, change, yank, put, and undo — the core editing operations.",
+        commands: [
+          {
+            command: "i a o",
+            description: "Enter insert mode — the gateway to typing text. Know the difference between i, a, o, I, A, O.",
+            syntax: "i / a / o / I / A / O",
+            syntaxParts: [
+              { label: "normal", value: "i  a  o  I  A  O", color: "text-cyber-primary" }
+            ],
+            example: "Hello [cursor] World!\n  i -> inserts BEFORE the cursor\n  a -> appends AFTER the cursor\n  I -> inserts at the START of the line\n  A -> appends at the END of the line\n  o -> opens a new line BELOW and enters insert mode\n  O -> opens a new line ABOVE and enters insert mode\n\nPress Esc to return to Normal mode.",
+            stepByStep: [
+              "i — insert text BEFORE the cursor (most common)",
+              "a — append text AFTER the cursor",
+              "I — jump to the first non-whitespace and insert",
+              "A — jump to the end of the line and insert",
+              "o — create a new line BELOW the current line and insert",
+              "O — create a new line ABOVE the current line and insert",
+              "Press Esc to exit insert mode and return to Normal mode",
+              "In insert mode, VIM behaves like a regular text editor"
+            ],
+            tryIt: "Place cursor on a word, press i to insert before it, type something, then Esc",
+            commonFlags: [
+              { flag: "i", description: "Insert before cursor" },
+              { flag: "a", description: "Append after cursor" },
+              { flag: "I", description: "Insert at start of line" },
+              { flag: "A", description: "Append at end of line" },
+              { flag: "o", description: "Open new line below and insert" },
+              { flag: "O", description: "Open new line above and insert" }
+            ]
+          },
+          {
+            command: "x dd yy p",
+            description: "Delete, yank, and paste — the essential edit commands without leaving normal mode.",
+            syntax: "x / dd / yy / p",
+            syntaxParts: [
+              { label: "normal", value: "x  dd  yy  p  P", color: "text-cyber-primary" }
+            ],
+            example: "x — delete character under cursor (like Del)\nX — delete character BEFORE cursor (like Backspace)\ndd — delete the entire current line (cut)\n5dd — delete 5 lines starting from current\nyy — yank (copy) the current line\n5yy — yank 5 lines\np — paste BELOW the current line\nP — paste ABOVE the current line",
+            stepByStep: [
+              "x — delete the character under the cursor (like Delete key)",
+              "X — delete the character before the cursor (like Backspace)",
+              "dd — delete (cut) the entire current line",
+              "5dd — delete 5 lines starting at the current line",
+              "yy — yank (copy) the current line into the default register",
+              "5yy — yank 5 lines",
+              "p — paste the contents of the default register BELOW the cursor",
+              "P — paste ABOVE the cursor"
+            ],
+            tryIt: "Place cursor on a line, press dd to delete it, then p to paste it back",
+            commonFlags: [
+              { flag: "x", description: "Delete character under cursor" },
+              { flag: "dd", description: "Delete (cut) current line" },
+              { flag: "yy", description: "Yank (copy) current line" },
+              { flag: "p", description: "Paste below cursor" },
+              { flag: "P", description: "Paste above cursor" },
+              { flag: "d{motion}", description: "Delete from cursor to motion target (e.g., dw, d$)" }
+            ]
+          },
+          {
+            command: "u Ctrl+r .",
+            description: "Undo, redo, and repeat — VIM's powerful undo tree and the dot repeat command.",
+            syntax: "u / Ctrl+r / .",
+            syntaxParts: [
+              { label: "normal", value: "u  Ctrl+r  .", color: "text-cyber-primary" }
+            ],
+            example: "u — undo the last change\nCtrl+r — redo the undone change\n. — repeat the last change\n\nExample:\n  dd — delete a line\n  jj — move down 2 lines\n  .  — delete that line too (repeats dd)",
+            stepByStep: [
+              "u — undo the most recent change (works across insert sessions)",
+              "Ctrl+r — redo (undo the undo)",
+              "VIM has a TREE of undos, not just a linear list",
+              "Use :undolist to see the undo tree",
+              "g+ and g- navigate forward/backward in undo history",
+              ". (dot) — repeat the LAST change at the cursor position",
+              ". is the most powerful VIM command: make a change once, then repeat with .",
+              "Example: daw deletes a word, then j.del. repeats that on each line"
+            ],
+            tryIt: "Delete a word with daw, move to another word, press . to delete it too",
+            commonFlags: [
+              { flag: "u", description: "Undo last change" },
+              { flag: "Ctrl+r", description: "Redo (undo the undo)" },
+              { flag: ".", description: "Repeat last change" },
+              { flag: "g+", description: "Go forward in undo history" },
+              { flag: "g-", description: "Go backward in undo history" }
+            ]
+          },
+          {
+            command: ":w :q :wq :q!",
+            description: "Save, quit, and manage files — the essential Ex-mode commands for file operations.",
+            syntax: ":w / :q / :wq / :q!",
+            syntaxParts: [
+              { label: "colon", value: ":", color: "text-cyber-accent" },
+              { label: "cmd", value: "w  q  wq  q!", color: "text-cyber-primary" }
+            ],
+            example: ":w        — save (write) the current file\n:q        — quit if no unsaved changes\n:wq       — save and quit\n:q!       — quit DISCARDING all unsaved changes\n:w !sudo tee %  — save a file you forgot to open with sudo\n:w newname.txt  — save to a new filename",
+            stepByStep: [
+              ":w — write (save) the current buffer to disk",
+              ":q — quit if no unsaved changes (will warn if modified)",
+              ":wq — write AND quit in one command",
+              ":q! — force quit discarding all changes",
+              ":w !sudo tee % — save a read-only file you opened without sudo",
+              ":w newfile.txt — save as a new filename",
+              ":e! — reload the file from disk (discard changes)",
+              ":e filename — open another file in the same buffer"
+            ],
+            tryIt: "Open any file, make a change, run :w to save, then :q to quit",
+            commonFlags: [
+              { flag: ":w", description: "Save (write) the file" },
+              { flag: ":q", description: "Quit" },
+              { flag: ":wq", description: "Save and quit" },
+              { flag: ":q!", description: "Force quit without saving" },
+              { flag: ":w filename", description: "Save to a specific filename" },
+              { flag: ":e!", description: "Reload file from disk" }
+            ]
+          },
+          {
+            command: "c d v motions",
+            description: "Operators + motions — the VIM grammar: verb + noun combinations for surgical editing.",
+            syntax: "<operator><count><motion>",
+            syntaxParts: [
+              { label: "op", value: "<operator>", color: "text-cyber-primary" },
+              { label: "count", value: "<count>", color: "text-cyber-accent" },
+              { label: "motion", value: "<motion>", color: "text-cyber-purple" }
+            ],
+            example: "Operator  Motion  Result\nd         w       dw  — delete from cursor to end of word\nc         w       cw  — change (delete + insert) to end of word\nd         $       d$  — delete from cursor to end of line\ny         w       yw  — yank a word\nc         t.      ct. — change everything up to (before) the next dot\nd         /foo    d/foo — delete up to the next occurrence of 'foo'",
+            stepByStep: [
+              "VIM combines operators with motions: d{motion}, c{motion}, y{motion}",
+              "dw — delete from cursor to start of next word",
+              "diw — delete INSIDE the word (cursor anywhere in the word)",
+              "daw — delete AROUND the word (including trailing space)",
+              "ci\" — change everything INSIDE the nearest double quotes",
+              "ca( — change everything AROUND parentheses (including parens)",
+              "dt. — delete everything up to (but not including) the next dot",
+              "d/foo — delete from cursor up to the next occurrence of 'foo'",
+              "This 'verb + noun' grammar is what makes VIM truly powerful"
+            ],
+            tryIt: "Place cursor in the middle of a word and press diw to delete inside the word",
+            commonFlags: [
+              { flag: "d{motion}", description: "Delete from cursor to motion" },
+              { flag: "c{motion}", description: "Change (delete + insert mode) to motion" },
+              { flag: "y{motion}", description: "Yank (copy) from cursor to motion" },
+              { flag: ">motion", description: "Indent right from cursor to motion" },
+              { flag: "i{char}", description: "Inside a delimiter (e.g., ci\", di{, yat)" },
+              { flag: "a{char}", description: "Around a delimiter (includes delimiter)" },
+              { flag: "t{char}", description: "Up to (before) character" },
+              { flag: "f{char}", description: "Find (on) character forward" }
+            ]
+          }
+        ]
+      },
+      {
+        id: "vim-search",
+        title: "Search & Replace",
+        description: "Find text instantly and perform surgical or global replacements.",
+        commands: [
+          {
+            command: "/ ? n N",
+            description: "Search forward and backward — the fastest way to find any text in a file.",
+            syntax: "/<pattern> / ?<pattern> / n / N",
+            syntaxParts: [
+              { label: "cmd", value: "/  ?  n  N", color: "text-cyber-primary" },
+              { label: "pattern", value: "<pattern>", color: "text-cyber-warning" }
+            ],
+            example: "/error        — search FORWARD for 'error'\n?error        — search BACKWARD for 'error'\nn             — repeat search in the SAME direction\nN             — repeat search in the OPPOSITE direction\n/\\<word\\>    — search for the exact word 'word' (no partial matches)\n/foo\\c       — case-insensitive search for 'foo'",
+            stepByStep: [
+              "/pattern — search FORWARD for pattern",
+              "?pattern — search BACKWARD for pattern",
+              "n — jump to the NEXT match (same direction as last search)",
+              "N — jump to the PREVIOUS match (opposite direction)",
+              "* — search for the exact word under the cursor (forward)",
+              "# — search for the exact word under the cursor (backward)",
+              "Use \\c at the end to make search case-insensitive",
+              "Use \\< and \\> for whole-word matching (like \\<foo\\>)",
+              "Use :noh to temporarily clear search highlighting"
+            ],
+            tryIt: "Press /error and press Enter, then keep pressing n to cycle through matches",
+            commonFlags: [
+              { flag: "/pattern", description: "Search forward for pattern" },
+              { flag: "?pattern", description: "Search backward for pattern" },
+              { flag: "n", description: "Next match (same direction)" },
+              { flag: "N", description: "Previous match (opposite direction)" },
+              { flag: "*", description: "Search forward for word under cursor" },
+              { flag: "#", description: "Search backward for word under cursor" },
+              { flag: ":noh", description: "Clear search highlighting" }
+            ]
+          },
+          {
+            command: ":s :%s",
+            description: "Substitute — find and replace within a line or across the entire file.",
+            syntax: ":[range]s/<pattern>/<replacement>/[flags]",
+            syntaxParts: [
+              { label: "colon", value: ":", color: "text-cyber-accent" },
+              { label: "range", value: "[range]", color: "text-cyber-purple" },
+              { label: "cmd", value: "s", color: "text-cyber-primary" },
+              { label: "args", value: "/<pattern>/<replacement>/[flags]", color: "text-cyber-warning" }
+            ],
+            example: ":s/foo/bar/         — replace first 'foo' on current line with 'bar'\n:s/foo/bar/g        — replace ALL 'foo' on current line with 'bar'\n:%s/foo/bar/g       — replace ALL 'foo' in the ENTIRE file\n:%s/foo/bar/gc      — same but CONFIRM each replacement\n:5,12s/foo/bar/g    — replace in lines 5 through 12 only\n:.,$s/foo/bar/g     — replace from current line to end of file",
+            stepByStep: [
+              ":s/old/new/ — replace the FIRST occurrence of 'old' with 'new' on the current line",
+              ":s/old/new/g — replace ALL occurrences on the current line (g = global within line)",
+              ":%s/old/new/g — replace ALL occurrences in the ENTIRE file",
+              ":%s/old/new/gc — add 'c' for CONFIRMATION (asks y/n for each match)",
+              ":%s/old/new/gi — add 'i' for case-INSENSITIVE matching",
+              "Use ranges: :5,12s/old/new/g for specific lines",
+              "Use \\1, \\2 for capture groups: :%s/\\(foo\\)\\(bar\\)/\\2\\1/g",
+              "& (ampersand) repeats the last :s command"
+            ],
+            tryIt: "Run :%s/foo/bar/gc to replace all 'foo' with 'bar' interactively",
+            commonFlags: [
+              { flag: ":s/old/new/", description: "Replace first on current line" },
+              { flag: ":s/old/new/g", description: "Replace all on current line" },
+              { flag: ":%s/old/new/g", description: "Replace all in entire file" },
+              { flag: ":%s/old/new/gc", description: "Replace with confirmation" },
+              { flag: ":%s/old/new/gi", description: "Replace case-insensitive" },
+              { flag: ":5,12s/old/new/g", description: "Replace in specific line range" }
+            ]
+          },
+          {
+            command: ":g :v",
+            description: "Global commands — execute a command on all lines matching a pattern (or not matching).",
+            syntax: ":[range]g/<pattern>/<command>",
+            syntaxParts: [
+              { label: "colon", value: ":", color: "text-cyber-accent" },
+              { label: "range", value: "[range]", color: "text-cyber-purple" },
+              { label: "cmd", value: "g", color: "text-cyber-primary" },
+              { label: "args", value: "/<pattern>/<command>", color: "text-cyber-warning" }
+            ],
+            example: ":g/TODO/d          — delete all lines containing 'TODO'\n:g/ERROR/t$        — copy all lines with 'ERROR' to end of file\n:g/^$/d            — delete ALL blank lines\n:v/ERROR/d         — delete all lines that do NOT contain 'ERROR'\n:g/DEBUG/norm yy   — yank all lines containing 'DEBUG'",
+            stepByStep: [
+              ":g/pattern/d — delete all lines matching pattern",
+              ":g/pattern/t$ — copy all matching lines to the end of file",
+              ":g/pattern/m$ — move all matching lines to the end of file",
+              ":v/pattern/d — delete all lines NOT matching pattern (v = inverse of g)",
+              ":g/^$/d — delete all empty lines",
+              ":g/^\\s*$/d — delete all blank or whitespace-only lines",
+              ":g/pattern/s/old/new/g — find matching lines and substitute within them",
+              ":g!/pattern/d — same as :v/pattern/d (inverse match)"
+            ],
+            tryIt: "Run :g/^$/d to delete all blank lines in a file",
+            commonFlags: [
+              { flag: ":g/pat/d", description: "Delete lines matching pattern" },
+              { flag: ":g/pat/t$", description: "Copy matching lines to end" },
+              { flag: ":g/pat/m$", description: "Move matching lines to end" },
+              { flag: ":v/pat/d", description: "Delete lines NOT matching (inverse)" },
+              { flag: ":g/^$/d", description: "Delete all blank lines" }
+            ]
+          }
+        ]
+      },
+      {
+        id: "vim-visual",
+        title: "Visual Mode",
+        description: "Select text visually, then operate on the selection — like a mouse, but better.",
+        commands: [
+          {
+            command: "v V Ctrl+v",
+            description: "Enter visual mode — character, line, or block selection for precision editing.",
+            syntax: "v / V / Ctrl+v",
+            syntaxParts: [
+              { label: "mode", value: "v  V  Ctrl+v", color: "text-cyber-primary" }
+            ],
+            example: "v     — character-wise visual mode (select char by char)\nV     — line-wise visual mode (select entire lines)\nCtrl+v  — block visual mode (select a rectangular column)\n\nOnce selected:\n  d  — delete selection\n  y  — yank (copy) selection\n  c  — change selection (delete + insert)\n  >  — indent right\n  <  — indent left\n  ~  — toggle case of all selected characters\n  u  — make selection lowercase\n  U  — make selection uppercase",
+            stepByStep: [
+              "v — enter character-wise Visual mode, use h/j/k/l to expand selection",
+              "V — enter line-wise Visual mode (selects whole lines at a time)",
+              "Ctrl+v — enter BLOCK Visual mode (select rectangular columns)",
+              "Once in visual mode, move with h/j/k/l or any motion to expand",
+              "Press d to delete the selection, y to yank, c to change",
+              "Press > to indent right, < to indent left",
+              "Press ~ to toggle case, u for lowercase, U for uppercase",
+              "Press o to toggle the cursor to the OTHER end of the selection",
+              "Press Esc or v to exit visual mode without doing anything"
+            ],
+            tryIt: "Press V then j to select multiple lines, then > to indent them right",
+            commonFlags: [
+              { flag: "v", description: "Character-wise visual mode" },
+              { flag: "V", description: "Line-wise visual mode" },
+              { flag: "Ctrl+v", description: "Block (column) visual mode" },
+              { flag: "gv", description: "Re-select the previous visual selection" }
+            ]
+          },
+          {
+            command: "y d c > < in visual",
+            description: "Operations on visual selections — yank, delete, change, indent what you've selected.",
+            syntax: "d / y / c / > / < / ~",
+            syntaxParts: [
+              { label: "op", value: "d  y  c  >  <  ~", color: "text-cyber-primary" }
+            ],
+            example: "Vjjjd   — visual select 3 lines, then delete them\nVjjj>   — visual select 3 lines, then indent right\nCtrl+v jjj I# Esc  — comment out 4 lines by inserting # at start of block\nCtrl+v jjj x       — delete the first character of 4 lines (block delete)",
+            stepByStep: [
+              "Select text with v/V/Ctrl+v, then press an operator",
+              "d — delete selection (also goes into default register)",
+              "y — yank (copy) selection into default register",
+              "c — change selection (delete + enter insert mode)",
+              "> — indent selection to the RIGHT (one shiftwidth)",
+              "< — indent selection to the LEFT (one shiftwidth)",
+              "~ — toggle case of selected text",
+              "u — make selected text lowercase",
+              "U — make selected text uppercase",
+              "Ctrl+v block mode + I + text + Esc = insert text at start of every selected line"
+            ],
+            tryIt: "Select 3 lines with Vjj then press > twice to indent them 2 levels",
+            commonFlags: [
+              { flag: "d", description: "Delete selection" },
+              { flag: "y", description: "Yank (copy) selection" },
+              { flag: "c", description: "Change selection (delete + insert)" },
+              { flag: ">", description: "Indent right" },
+              { flag: "<", description: "Indent left" },
+              { flag: "I{text}Esc", description: "Insert text at start of every block-selected line (Ctrl+v)" }
+            ]
+          }
+        ]
+      },
+      {
+        id: "vim-advanced",
+        title: "Advanced Operations",
+        description: "Registers, macros, marks, split windows, and VIM's most powerful productivity features.",
+        commands: [
+          {
+            command: '" registers',
+            description: "Named registers — store multiple snippets of text and access them independently.",
+            syntax: '"<register><command>',
+            syntaxParts: [
+              { label: "register", value: '"<register>', color: "text-cyber-primary" },
+              { label: "cmd", value: "<command>", color: "text-cyber-accent" }
+            ],
+            example: '"ayy         — yank current line into register a\n"ap          — paste contents of register a\n:reg a       — show contents of register a\n:reg         — show ALL registers\n\nSpecial registers:\n"" — default register (last yank/delete)\n"0 — last yanked text (not deleted!)\n"+ — system clipboard\n"* — X11 primary clipboard (middle-click)\n". — last inserted text\n"% — current file name',
+            stepByStep: [
+              "\"ayy — yank (copy) current line into named register 'a'",
+              "\"ap — paste from register 'a'",
+              ":reg — list ALL registers and their contents",
+              ":reg a — list contents of register 'a' only",
+              "\"0p — paste the last YANKED text (deletes don't overwrite \"0)",
+              "\"+y — yank to system clipboard (accessible outside VIM)",
+              "\"+p — paste from system clipboard",
+              "\"_d — delete into the BLACK HOLE register (nothing is saved)",
+              "\"= — expression register (for calculations: \"=5*12 then p gives 60)",
+              "Capital register letter APPENDS: \"Ay yanks and appends to register a"
+            ],
+            tryIt: "Yank a line with \"ayy, then paste it elsewhere with \"ap",
+            commonFlags: [
+              { flag: '"a-"{letter}', description: "Named registers a-z" },
+              { flag: '"0', description: "Last yanked text (yank-only)" },
+              { flag: '"+', description: "System clipboard" },
+              { flag: '"*', description: "X11 primary clipboard" },
+              { flag: '".', description: "Last inserted text" },
+              { flag: '"_', description: "Black hole register (discard)" },
+              { flag: '"=', description: "Expression register (calculator)" },
+              { flag: ':reg', description: "List all registers" }
+            ]
+          },
+          {
+            command: "qa ... q @a",
+            description: "Macros — record a sequence of keystrokes and replay it to automate repetitive edits.",
+            syntax: "q<register><commands>q / @<register>",
+            syntaxParts: [
+              { label: "start", value: "q", color: "text-cyber-primary" },
+              { label: "reg", value: "<register>", color: "text-cyber-accent" },
+              { label: "end", value: "q", color: "text-cyber-primary" },
+              { label: "play", value: "@<register>", color: "text-cyber-warning" }
+            ],
+            example: "qa            — start recording into register 'a'\n  ^w          — delete word\n  j            — move down one line\nq             — stop recording\n\n@@            — replay the last used macro\n5@a           — replay macro 'a' five times\n\nCommon macro pattern:\n  qa           — start recording\n  A,<Esc>      — append comma at end of line\n  j            — move to next line\n  q            — stop recording\n  10@a         — add comma to 10 lines",
+            stepByStep: [
+              "qa — start recording macro into register 'a'",
+              "Perform your edit steps (use motions, edits, etc.)",
+              "q — stop recording",
+              "@a — replay the macro once",
+              "5@a — replay the macro 5 times",
+              "@@ — replay the LAST used macro (even if different register)",
+              "While recording, use : to execute commands that don't interrupt the flow",
+              "Macro fails gracefully on error — useful if you don't know exact line count",
+              "1000@a — apply 'a' to next 1000 lines (stops when lines run out)"
+            ],
+            tryIt: "Record qa: i// <Esc>jq, then 5@a to comment out 5 lines",
+            commonFlags: [
+              { flag: "q{reg}", description: "Start recording macro into register" },
+              { flag: "q", description: "Stop recording" },
+              { flag: "@{reg}", description: "Replay macro from register" },
+              { flag: "@@", description: "Replay last used macro" },
+              { flag: "{count}@{reg}", description: "Replay macro count times" }
+            ]
+          },
+          {
+            command: "m ' marks",
+            description: "Marks — bookmark positions in a file (or across files) for instant navigation.",
+            syntax: "m<letter> / '<letter> / `' / `. / :marks",
+            syntaxParts: [
+              { label: "set", value: "m<letter>", color: "text-cyber-primary" },
+              { label: "jump", value: "'<letter>", color: "text-cyber-accent" },
+              { label: "prev", value: "`` ``.", color: "text-cyber-warning" }
+            ],
+            example: "ma            — mark current position as 'a'\n'a            — jump to line containing mark 'a'\n`a            — jump to EXACT position (line + column) of mark 'a'\n\n``            — jump back to the PREVIOUS cursor position\n`.            — jump to the LAST CHANGE position\n:marks        — list all current marks\n:delm a       — delete mark 'a'\n\nSpecial marks:\n'. — position of last change\n\". — position of last file exit\n[  — start of last change\n]  — end of last change",
+            stepByStep: [
+              "ma — set a mark named 'a' at the current cursor position",
+              "'a — jump to the BEGINNING of the line containing mark 'a'",
+              "`a — jump to the EXACT line AND column of mark 'a'",
+              "`` — return to the previous cursor position (before the last jump)",
+              "`. — jump to the position of the LAST CHANGE",
+              ":marks — list all defined marks (a-z, A-Z, and special marks)",
+              "Capital marks (mA) are GLOBAL — they work across different files",
+              "Use marks to set bookmarks for navigation within a file"
+            ],
+            tryIt: "Scroll to a spot, press ma, then scroll away; press 'a to jump back",
+            commonFlags: [
+              { flag: "m{letter}", description: "Set mark at current position" },
+              { flag: "'{letter}", description: "Jump to line of mark" },
+              { flag: "`{letter}", description: "Jump to exact position of mark" },
+              { flag: "``", description: "Jump to previous position" },
+              { flag: "`.", description: "Jump to last change" },
+              { flag: ":marks", description: "List all marks" },
+              { flag: ":delm {letter}", description: "Delete a mark" }
+            ]
+          },
+          {
+            command: ":split :vsplit Ctrl+w",
+            description: "Window management — split and navigate multiple views of the same (or different) files.",
+            syntax: ":split / :vsplit / Ctrl+w <key>",
+            syntaxParts: [
+              { label: "cmd", value: ":split  :vsplit  Ctrl+w", color: "text-cyber-primary" },
+              { label: "key", value: "<key>", color: "text-cyber-accent" }
+            ],
+            example: ":split        — split window HORIZONTALLY (top/bottom)\n:vsplit       — split window VERTICALLY (left/right)\n:sp file.txt  — split and open another file\n\nCtrl+w w      — cycle to the next window\nCtrl+w j      — move to window BELOW\nCtrl+w k      — move to window ABOVE\nCtrl+w h      — move to window LEFT\nCtrl+w l      — move to window RIGHT\n\nCtrl+w =      — equalize all window sizes\nCtrl+w _      — maximize current window height\nCtrl+w |      — maximize current window width\n:q            — close the current window",
+            stepByStep: [
+              ":split or :sp — split the window HORIZONTALLY",
+              ":vsplit or :vs — split the window VERTICALLY",
+              ":sp filename — split and open another file",
+              "Ctrl+w w — cycle to the next window (like tab between panes)",
+              "Ctrl+w h/j/k/l — navigate windows by direction",
+              "Ctrl+w = — make all windows equal size",
+              "Ctrl+w + or - — increase/decrease window height",
+              "Ctrl+w > or < — increase/decrease window width",
+              ":q — close the current window (or :close)",
+              ":only — close ALL other windows, keep only the current one"
+            ],
+            tryIt: "Run :split then :vsplit to create a 2x2 grid, practice Ctrl+w w to cycle",
+            commonFlags: [
+              { flag: ":split", description: "Split horizontally" },
+              { flag: ":vsplit", description: "Split vertically" },
+              { flag: "Ctrl+w h/j/k/l", description: "Navigate to window (left/down/up/right)" },
+              { flag: "Ctrl+w w", description: "Cycle to next window" },
+              { flag: "Ctrl+w =", description: "Equalize window sizes" },
+              { flag: ":q", description: "Close current window" },
+              { flag: ":only", description: "Close all other windows" }
+            ]
+          },
+          {
+            command: ":set options",
+            description: "VIM options — customize behavior on the fly: line numbers, tabs, search, and more.",
+            syntax: ":set <option> / :set <option>=<value>",
+            syntaxParts: [
+              { label: "colon", value: ":", color: "text-cyber-accent" },
+              { label: "cmd", value: "set", color: "text-cyber-primary" },
+              { label: "opt", value: "<option>[=<value>]", color: "text-cyber-warning" }
+            ],
+            example: ":set number       — show line numbers (short: :set nu)\n:set nonumber      — hide line numbers (short: :set nonu)\n:set number!       — toggle line numbers\n:set tabstop=4      — set tab width to 4 spaces\n:set expandtab      — convert tabs to spaces\n:set autoindent     — copy indent from previous line\n:set hlsearch       — highlight search matches\n:set ignorecase     — case-insensitive search\n:set smartcase      — override ignorecase if pattern has uppercase\n:set list           — show invisible characters (tabs, trailing spaces)",
+            stepByStep: [
+              ":set number — show line numbers in the gutter",
+              ":set nonumber — hide line numbers",
+              ":set number! — TOGGLE line numbers (same as :set nu!)",
+              ":set tabstop=4 — display existing tabs as 4 spaces wide",
+              ":set shiftwidth=4 — set indent width for >>, <<, and autoindent",
+              ":set expandtab — use spaces when you press Tab",
+              ":set hlsearch — highlight ALL search matches",
+              ":set incsearch — show matches AS YOU TYPE the search pattern",
+              ":set ignorecase — case-INSENSITIVE search",
+              ":set smartcase — if pattern has uppercase, search case-sensitive",
+              ":set list — show tabs as ^I and trailing whitespace as $",
+              "Put your favorite :set commands in ~/.vimrc to make them permanent"
+            ],
+            tryIt: "Run :set number to enable line numbers, then :set nonumber to disable",
+            commonFlags: [
+              { flag: ":set nu", description: "Show line numbers" },
+              { flag: ":set nonu", description: "Hide line numbers" },
+              { flag: ":set ts=4", description: "Tab stop = 4 spaces" },
+              { flag: ":set sw=4", description: "Shift width = 4 spaces" },
+              { flag: ":set et", description: "Expand tabs to spaces" },
+              { flag: ":set hls", description: "Highlight search matches" },
+              { flag: ":set ic", description: "Ignore case in searches" },
+              { flag: ":set list", description: "Show invisible characters" },
+              { flag: ":set all", description: "Show ALL current option values" }
             ]
           }
         ]

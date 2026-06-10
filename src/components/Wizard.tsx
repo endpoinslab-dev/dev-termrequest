@@ -29,7 +29,7 @@ function initialPlaygroundState(): ShellState {
 }
 
 interface WizardProps {
-  trackId: 'linux' | 'powershell' | 'kql';
+  trackId: 'linux' | 'powershell' | 'kql' | 'vim';
   onBack: () => void;
 }
 
