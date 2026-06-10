@@ -9,7 +9,7 @@ type ViewMode = 'missions' | 'wizard-linux' | 'wizard-powershell' | 'wizard-kql'
 const LogoutBtn: React.FC = () => {
   const { user, logout } = useAuth();
   return (
-    <button onClick={logout} className="text-xs text-cyber-muted hover:text-white" title="Logout">
+    <button onClick={logout} className="text-xs text-cyber-accent border border-cyber-accent/30 bg-cyber-accent/10 px-3 py-1 rounded font-medium hover:bg-cyber-accent/20 transition-colors" title="Logout">
       {user?.name} (Logout)
     </button>
   );
