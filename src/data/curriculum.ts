@@ -540,7 +540,7 @@ export const curriculum: Level[] = [
   },
   {
     num: 1,
-    name: "Bash Scripting Fundamentals",
+    name: "Bash Scripting",
     rank: "Script Apprentice",
     description: "Write your first Bash scripts, use conditions, loops, arguments, and exit codes.",
     missions: [
@@ -610,9 +610,9 @@ export const curriculum: Level[] = [
   },
   {
     num: 2,
-    name: "Real Linux Automation",
-    rank: "Automation Engineer",
-    description: "Automate system monitoring, log rotations, scheduled tasks (cron), and JSON parsing with jq.",
+    name: "Script Automation",
+    rank: "Script Automation",
+    description: "Automate your workflow with cron scheduling, backup scripts, log rotation, and system health monitoring.",
     missions: [
       {
         id: "m2_1",
@@ -643,56 +643,326 @@ export const curriculum: Level[] = [
         realWorldUseCase: "Log rotations, weekly db backups, and SSL cert renewals are all automated with Cron. Knowing standard cron time expressions is vital for running robust systems.",
         commonMistakes: "Putting the parameters in the wrong order, like `* * 0 0 *` or using 6 fields instead of 5.",
         debuggingTips: "Remember: Minute, Hour, Day, Month, Week. Make sure there are single spaces between fields."
+      },
+      {
+        id: "m2_2",
+        levelNum: 2,
+        title: "The Backup That Never Was",
+        subtitle: "Automated backup script with error handling",
+        category: "Linux",
+        xpReward: 350,
+        story: "The nightly backup silently failed for three weeks because the backup script had no error handling. The backup directory was missing and the script continued running, logging 'success' while writing nothing. Now the CFO needs last month's transaction logs and they're gone.",
+        objective: "Write a bash script '/home/user/backup.sh' that checks if the target directory exists before copying, exits with code 1 if it doesn't, and logs both success and failure to 'backup.log'.",
+        taskDescription: "Create a script that verifies '/home/user/backup' exists, copies all .log files there, logs the outcome with a timestamp, and exits with appropriate codes.",
+        initialVfsState: {
+          "/home/user/backup.sh": "",
+          "/home/user/transactions.log": "2026-05-01 TXN: $12,450.00\n2026-05-02 TXN: $8,230.00\n2026-05-03 TXN: $15,100.00",
+          "/home/user/backup.log": ""
+        },
+        validationRules: [
+          { type: "file_contains", params: { path: "/home/user/backup.sh", substring: "#!/bin/bash" } },
+          { type: "file_contains", params: { path: "/home/user/backup.sh", substring: "backup" } },
+          { type: "file_contains", params: { path: "/home/user/backup.sh", substring: "exit 1" } }
+        ],
+        hints: [
+          "Start with '#!/bin/bash'",
+          "Use 'if [ ! -d \"backup\" ]; then' to check if the directory doesn't exist",
+          "Use 'mkdir backup' to create it, then 'cp *.log backup/' to copy files",
+          "Use 'echo \"$(date) SUCCESS\" >> backup.log' for logging"
+        ],
+        solutionWalkthrough: "Write:\n#!/bin/bash\nLOG_FILE=\"backup.log\"\necho \"$(date) Starting backup...\" >> $LOG_FILE\nif [ ! -d \"backup\" ]; then\n  echo \"$(date) ERROR: backup directory not found\" >> $LOG_FILE\n  exit 1\nfi\ncp *.log backup/\necho \"$(date) SUCCESS: Logs backed up\" >> $LOG_FILE",
+        realWorldUseCase: "Silent backup failures cause permanent data loss. Production backup scripts always have directory existence checks, exit codes, and audit logging.",
+        commonMistakes: "Not checking if the source files exist before copying. Using 'cp' without '-r' for directories. Forgetting to quote variables with spaces.",
+        debuggingTips: "Run the script manually with 'bash -x backup.sh' to trace every line. Check backup.log for timestamps.",
+        activeIncident: {
+          title: "HIGH: Backup script silently failing",
+          description: "Three weeks of transaction logs not backed up because the target directory was missing and the script had no error handling.",
+          severity: "HIGH"
+        }
+      },
+      {
+        id: "m2_3",
+        levelNum: 2,
+        title: "The Growing Pains",
+        subtitle: "Automated log rotation to prevent disk full",
+        category: "Linux",
+        xpReward: 320,
+        story: "ALERT: Disk usage on the application server is at 94% and climbing. The app logs grow 500MB per day and nobody is rotating them. You need to write an automated log rotation script that compresses logs older than 2 days and removes archives older than 30 days.",
+        objective: "Write a script '/home/user/rotate_logs.sh' that finds .log files older than 2 days, compresses them with gzip, and removes .gz files older than 30 days.",
+        taskDescription: "Create a rotation script using find with -mtime, gzip for compression, and -exec rm for cleanup of aged archives.",
+        initialVfsState: {
+          "/home/user/rotate_logs.sh": "",
+          "/home/user/logs/app.log": "INFO: App started\nERROR: timeout\nINFO: healthy",
+          "/home/user/logs/access.log": "192.168.1.1 - GET /index 200\n10.0.0.5 - POST /api 500"
+        },
+        validationRules: [
+          { type: "file_contains", params: { path: "/home/user/rotate_logs.sh", substring: "gzip" } },
+          { type: "file_contains", params: { path: "/home/user/rotate_logs.sh", substring: "find" } },
+          { type: "file_contains", params: { path: "/home/user/rotate_logs.sh", substring: "mtime" } }
+        ],
+        hints: [
+          "Use 'find logs/ -name \"*.log\" -mtime +2 -exec gzip {} \\;' to compress old logs",
+          "Use 'find logs/ -name \"*.gz\" -mtime +30 -exec rm {} \\;' to purge old archives",
+          "Add '#!/bin/bash' at the top"
+        ],
+        solutionWalkthrough: "Write:\n#!/bin/bash\nfind logs/ -name \"*.log\" -mtime +2 -exec gzip {} \\;\nfind logs/ -name \"*.gz\" -mtime +30 -exec rm {} \\;\necho \"Log rotation complete at $(date)\"",
+        realWorldUseCase: "Log rotation is mandatory in production. Without it, disks fill up in days, causing application crashes and data loss. Tools like logrotate automate this, but custom scripts are used in containers.",
+        commonMistakes: "Compressing logs that are still being written to (use lsof to check). Deleting archives too aggressively without retention policy.",
+        debuggingTips: "Test with '-exec echo {} \\;' first to see which files would match before actually compressing or deleting.",
+        activeIncident: {
+          title: "CRITICAL: Disk usage at 94% due to unrotated logs",
+          description: "Application server disk is filling up because logs are not being rotated. App logs grow 500MB per day and will cause a full outage within 2 days.",
+          severity: "CRITICAL"
+        }
+      },
+      {
+        id: "m2_4",
+        levelNum: 2,
+        title: "The Silent Heartbeat",
+        subtitle: "Automated system health check script",
+        category: "Linux",
+        xpReward: 380,
+        story: "CRITICAL: The web server went down for 45 minutes before anyone noticed. The monitoring system was misconfigured and nobody received an alert. You need to build a simple health check script that tests connectivity to critical services and writes a status report with timestamps.",
+        objective: "Write a script '/home/user/healthcheck.sh' that pings a target host, checks if a port is listening with ss, and writes a status report to 'health.log'.",
+        taskDescription: "Create a health check script that tests connectivity to 'localhost' and checks if port 8080 is listening, then writes a timestamped pass/fail report.",
+        initialVfsState: {
+          "/home/user/healthcheck.sh": ""
+        },
+        validationRules: [
+          { type: "file_contains", params: { path: "/home/user/healthcheck.sh", substring: "ping" } },
+          { type: "file_contains", params: { path: "/home/user/healthcheck.sh", substring: "ss" } },
+          { type: "file_contains", params: { path: "/home/user/healthcheck.sh", substring: "health.log" } }
+        ],
+        hints: [
+          "Use 'ping -c 1 localhost > /dev/null 2>&1' to silently test connectivity",
+          "Use 'ss -tlnp | grep 8080' to check if port 8080 is listening",
+          "Use 'echo \"$(date): STATUS\" >> health.log' to append timestamped results"
+        ],
+        solutionWalkthrough: "Write:\n#!/bin/bash\nLOG=\"health.log\"\necho \"$(date): Health check started\" >> $LOG\nif ping -c 1 localhost > /dev/null 2>&1; then\n  echo \"$(date): Network OK\" >> $LOG\nelse\n  echo \"$(date): Network FAIL\" >> $LOG\nfi\nif ss -tlnp | grep -q 8080; then\n  echo \"$(date): Port 8080 OK\" >> $LOG\nelse\n  echo \"$(date): Port 8080 FAIL\" >> $LOG\nfi",
+        realWorldUseCase: "Custom health checks are essential for services that aren't covered by off-the-shelf monitoring. SRE teams write dozens of these to validate application health, certificate expiry, and database connectivity.",
+        commonMistakes: "Not redirecting ping output to /dev/null (clutters logs). Only checking once without retries (transient failures cause false alerts).",
+        debuggingTips: "Test each check command manually before adding it to the script. Use 'bash -x healthcheck.sh' to trace execution.",
+        activeIncident: {
+          title: "CRITICAL: Web server down 45 minutes with no alert",
+          description: "The primary web server crashed and monitoring was misconfigured. No alert was generated. Requires automated health checking with timestamped reporting.",
+          severity: "CRITICAL"
+        }
+      },
+      {
+        id: "m2_5",
+        levelNum: 2,
+        title: "The Forgotten Lock",
+        subtitle: "Stale PID file cleanup automation",
+        category: "Linux",
+        xpReward: 340,
+        story: "MEDIUM: The application won't start after a crash. It claims 'PID file already exists' but the process is dead. A stale /var/run/app.pid is blocking the restart. You need to automate stale PID detection and cleanup.",
+        objective: "Write a script '/home/user/cleanup_pid.sh' that checks if a PID file exists, verifies the process is running, and removes the file if the process is dead.",
+        taskDescription: "Create a script that checks for 'app.pid', reads the PID, checks /proc/PID, and removes the file if the process doesn't exist.",
+        initialVfsState: {
+          "/home/user/cleanup_pid.sh": "",
+          "/home/user/app.pid": "99999"
+        },
+        validationRules: [
+          { type: "file_contains", params: { path: "/home/user/cleanup_pid.sh", substring: "pid" } },
+          { type: "file_contains", params: { path: "/home/user/cleanup_pid.sh", substring: "kill -0" } },
+          { type: "file_contains", params: { path: "/home/user/cleanup_pid.sh", substring: "rm" } }
+        ],
+        hints: [
+          "Read the PID from the file: PID=$(cat app.pid)",
+          "'kill -0 $PID' checks if a process exists without sending a signal",
+          "If kill -0 fails, remove the stale file: rm app.pid"
+        ],
+        solutionWalkthrough: "Write:\n#!/bin/bash\nPID_FILE=\"app.pid\"\nif [ -f \"$PID_FILE\" ]; then\n  PID=$(cat \"$PID_FILE\")\n  if kill -0 \"$PID\" 2>/dev/null; then\n    echo \"Process $PID is running\"\n  else\n    echo \"Stale PID found. Removing $PID_FILE\"\n    rm \"$PID_FILE\"\n  fi\nfi",
+        realWorldUseCase: "Stale PID files are a common cause of deployment failures in legacy systems. Automated cleanup scripts prevent manual intervention during outages.",
+        commonMistakes: "Using 'kill -9' instead of 'kill -0' (kill -0 just checks existence, -9 kills the process). Not checking if the file exists before reading it.",
+        debuggingTips: "Simulate a stale PID by creating an app.pid with a non-existent PID number. Run the script and verify the file is removed.",
+        activeIncident: {
+          title: "MEDIUM: Application crash-looping due to stale PID file",
+          description: "After an unexpected crash, the application refuses to restart because a stale PID file exists claiming the old process is still running.",
+          severity: "MEDIUM"
+        }
       }
     ]
   },
   {
     num: 3,
-    name: "Advanced Bash Engineering",
-    rank: "DevOps Operator",
-    description: "Master text processing with awk, sed, advanced regex, error trapping, and building custom CLI utilities.",
+    name: "SysAdmin Engineering",
+    rank: "Automation Engineer",
+    description: "Manage users, networks, packages, and storage like a professional systems administrator.",
     missions: [
       {
         id: "m3_1",
         levelNum: 3,
-        title: "The Awk Alchemist",
-        subtitle: "Parsing reports with awk",
+        title: "The Rogue User",
+        subtitle: "User account audit and deactivation",
         category: "Linux",
         xpReward: 350,
-        story: "Our cloud billing engine exported a CSV containing usage metrics for various virtual machines. Your manager needs a list of VM IDs and their respective RAM usage, but ONLY for VMs that are exceeding 80% usage.",
-        objective: "Write a command that processes '/home/user/metrics.csv' and extracts matching columns using 'awk'.",
-        taskDescription: "Extract columns for VM_ID and usage ratio where usage exceeds 80%. Create a file '/home/user/alerts.txt' with columns extracted from rows where the usage (3rd column) is > 80.",
+        story: "CRITICAL: A terminated employee's SSH key was used to access the production database at 3 AM. Security needs every inactive user account locked immediately. You must identify users who haven't logged in for 90 days and lock their accounts.",
+        objective: "Write a script '/home/user/audit_users.sh' that uses 'lastlog' to find accounts inactive for 90+ days and runs 'usermod -L' to lock them.",
+        taskDescription: "Create a script that parses lastlog output, identifies users with 'Never logged in' or dates older than 90 days, and locks those accounts.",
         initialVfsState: {
-          "/home/user/metrics.csv": "VM_ID,CPU,RAM_USAGE\nvm-101,45,65\nvm-102,90,88\nvm-103,12,34\nvm-104,81,85\nvm-105,75,50",
-          "/home/user/alerts.txt": ""
+          "/home/user/audit_users.sh": ""
         },
         validationRules: [
-          {
-            type: "file_contains",
-            params: { path: "/home/user/alerts.txt", substring: "vm-102" }
-          },
-          {
-            type: "file_contains",
-            params: { path: "/home/user/alerts.txt", substring: "vm-104" }
-          }
+          { type: "file_contains", params: { path: "/home/user/audit_users.sh", substring: "lastlog" } },
+          { type: "file_contains", params: { path: "/home/user/audit_users.sh", substring: "usermod" } },
+          { type: "file_contains", params: { path: "/home/user/audit_users.sh", substring: "-L" } }
         ],
         hints: [
-          "Use awk with comma delimiter: awk -F, '$3 > 80 {print $1, $3}' metrics.csv",
-          "Redirect the output to alerts.txt.",
-          "Try running: awk -F, '$3 > 80 {print $1, $3}' metrics.csv > alerts.txt"
+          "'lastlog -b 90' shows users who haven't logged in for 90+ days",
+          "Use 'usermod -L username' to lock a user account",
+          "Pipe lastlog output to awk to extract usernames: lastlog -b 90 | awk 'NR>1 {print $1}'"
         ],
-        solutionWalkthrough: "Run `awk -F, '$3 > 80 {print $1, $3}' metrics.csv > alerts.txt` to filter records with RAM usage > 80% and print VM_ID alongside usage details, writing results to alerts.txt.",
-        realWorldUseCase: "AWK is a complete Turing-complete programming language built for text stream processing. It is used inside legacy logs and database records parsing to build instant reports without needing heavy languages like Python.",
-        commonMistakes: "Using standard spaces instead of specifying a comma delimiter `-F,`. Forgetting single quotes around the awk statement.",
-        debuggingTips: "If you get empty results, double check that column 3 values are numeric and compared accurately without spaces in strings."
+        solutionWalkthrough: "Write:\n#!/bin/bash\nlastlog -b 90 | awk 'NR>1 {print $1}' | while read user; do\n  usermod -L \"$user\"\n  echo \"Locked: $user\"\ndone",
+        realWorldUseCase: "User account audits are mandatory for SOX, HIPAA, and PCI compliance. Automated lockout of dormant accounts prevents unauthorized access from former employees.",
+        commonMistakes: "Locking system accounts (root, daemon, bin) which should never be locked. Not excluding service accounts from the audit.",
+        debuggingTips: "Run 'lastlog -b 90' manually first to see which users are flagged. Check '/etc/shadow' to verify accounts are locked.",
+        activeIncident: {
+          title: "CRITICAL: Unauthorized access via terminated employee account",
+          description: "A former employee's SSH key was used to access the production database at 3 AM. All inactive accounts must be locked immediately.",
+          severity: "CRITICAL"
+        }
+      },
+      {
+        id: "m3_2",
+        levelNum: 3,
+        title: "The Black Hole Router",
+        subtitle: "Network configuration troubleshooting",
+        category: "Linux",
+        xpReward: 400,
+        story: "CRITICAL: The office network is down. Users can't reach the internet or internal servers. The default gateway seems misconfigured. You need to inspect the routing table, check the default gateway, and verify DNS resolution.",
+        objective: "Write a script '/home/user/network_diag.sh' that displays the routing table with 'ip route', pings the default gateway, and tests DNS with 'nslookup'.",
+        taskDescription: "Create a diagnostic script that captures the current routing table, tests gateway connectivity, and verifies DNS resolution for 'google.com'.",
+        initialVfsState: {
+          "/home/user/network_diag.sh": ""
+        },
+        validationRules: [
+          { type: "file_contains", params: { path: "/home/user/network_diag.sh", substring: "ip route" } },
+          { type: "file_contains", params: { path: "/home/user/network_diag.sh", substring: "ping" } },
+          { type: "file_contains", params: { path: "/home/user/network_diag.sh", substring: "nslookup" } }
+        ],
+        hints: [
+          "'ip route' shows the kernel routing table including the default gateway",
+          "Extract the default gateway: ip route | grep default | awk '{print $3}'",
+          "'nslookup google.com' tests DNS resolution"
+        ],
+        solutionWalkthrough: "Write:\n#!/bin/bash\necho \"=== Routing Table ===\"\nip route\necho \"\"\necho \"=== Default Gateway Test ===\"\nGW=$(ip route | grep default | awk '{print $3}')\nping -c 2 $GW\necho \"\"\necho \"=== DNS Test ===\"\nnslookup google.com",
+        realWorldUseCase: "Network outage triage is the most common sysadmin task. A standardized network diagnostic script saves critical minutes during an active incident.",
+        commonMistakes: "Pinging 8.8.8.8 to test connectivity but not checking the gateway first. Forgetting that 'route -n' is deprecated in favor of 'ip route'.",
+        debuggingTips: "Run each command individually: 'ip route', 'ip addr', 'ping -c 1 8.8.8.8'. Check '/etc/resolv.conf' for DNS configuration.",
+        activeIncident: {
+          title: "CRITICAL: Office network outage - no internet access",
+          description: "All users are unable to reach the internet or internal servers. Suspected default gateway misconfiguration.",
+          severity: "CRITICAL"
+        }
+      },
+      {
+        id: "m3_3",
+        levelNum: 3,
+        title: "The Vulnerability Cascade",
+        subtitle: "Package management and system update",
+        category: "Linux",
+        xpReward: 370,
+        story: "HIGH: A critical CVE was published affecting the OpenSSL library used across all production servers. The security team demands an immediate inventory of all installed packages containing 'ssl' and an upgrade of the affected packages.",
+        objective: "Write a script '/home/user/audit_packages.sh' that uses 'dpkg -l | grep ssl' to find SSL-related packages and logs them to 'ssl_packages.txt'.",
+        taskDescription: "Create a script that lists all installed packages, filters for those containing 'ssl', counts them, and saves the list to a file.",
+        initialVfsState: {
+          "/home/user/audit_packages.sh": "",
+          "/home/user/ssl_packages.txt": ""
+        },
+        validationRules: [
+          { type: "file_contains", params: { path: "/home/user/audit_packages.sh", substring: "dpkg" } },
+          { type: "file_contains", params: { path: "/home/user/audit_packages.sh", substring: "ssl" } },
+          { type: "file_contains", params: { path: "/home/user/audit_packages.sh", substring: "ssl_packages.txt" } }
+        ],
+        hints: [
+          "'dpkg -l' lists all installed Debian packages",
+          "Pipe to 'grep -i ssl' to case-insensitively filter for SSL packages",
+          "Use 'wc -l' to count them, redirect filtered list to ssl_packages.txt"
+        ],
+        solutionWalkthrough: "Write:\n#!/bin/bash\ndpkg -l | grep -i ssl > /home/user/ssl_packages.txt\nCOUNT=$(wc -l < /home/user/ssl_packages.txt)\necho \"Found $COUNT SSL-related packages\"",
+        realWorldUseCase: "When zero-day vulnerabilities like Heartbleed or Log4Shell hit, teams must rapidly inventory affected packages across thousands of servers. Automated audit scripts are the difference between a 1-hour and a 24-hour response.",
+        commonMistakes: "Only checking package names without checking installed versions. Forgetting that 'dpkg -l' shows installed and removed packages (use 'dpkg -l | grep ^ii' for only installed).",
+        debuggingTips: "First run 'dpkg -l | grep ssl' manually to see the output format. Verify the package count is reasonable.",
+        activeIncident: {
+          title: "HIGH: Critical OpenSSL CVE affecting production servers",
+          description: "A zero-day vulnerability in OpenSSL requires immediate inventory of all SSL-related packages across production infrastructure.",
+          severity: "HIGH"
+        }
+      },
+      {
+        id: "m3_4",
+        levelNum: 3,
+        title: "The Disk That Vanished",
+        subtitle: "Filesystem mounting and disk recovery",
+        category: "Linux",
+        xpReward: 420,
+        story: "CRITICAL: The database server lost its storage volume. The mount point '/data' is empty and the database won't start. The storage team says the volume is attached but not mounted. You need to identify the unmounted filesystem and mount it.",
+        objective: "Write a script '/home/user/mount_check.sh' that uses 'lsblk' to list block devices, identifies unmounted filesystems, and writes a mount report to 'mount_report.txt'.",
+        taskDescription: "Create a script that lists block devices, checks which ones have filesystems but are not mounted, and generates a recovery report.",
+        initialVfsState: {
+          "/home/user/mount_check.sh": ""
+        },
+        validationRules: [
+          { type: "file_contains", params: { path: "/home/user/mount_check.sh", substring: "lsblk" } },
+          { type: "file_contains", params: { path: "/home/user/mount_check.sh", substring: "mount" } },
+          { type: "file_contains", params: { path: "/home/user/mount_check.sh", substring: "fstab" } }
+        ],
+        hints: [
+          "'lsblk -f' shows block devices with filesystem type and mount point",
+          "'mount' shows currently mounted filesystems",
+          "'cat /etc/fstab' shows persistent mount configuration"
+        ],
+        solutionWalkthrough: "Write:\n#!/bin/bash\necho \"=== Block Devices ===\" > mount_report.txt\nlsblk -f >> mount_report.txt\necho \"\" >> mount_report.txt\necho \"=== Current Mounts ===\" >> mount_report.txt\nmount >> mount_report.txt\necho \"\" >> mount_report.txt\necho \"=== FSTAB ===\" >> mount_report.txt\ncat /etc/fstab >> mount_report.txt",
+        realWorldUseCase: "Cloud ephemeral volumes can detach or fail to mount after reboot. Automated filesystem checks are critical for database and stateful workload recovery.",
+        commonMistakes: "Mounting a device without checking if it has a valid filesystem (may contain raw data). Forgetting to update /etc/fstab for persistent mounts.",
+        debuggingTips: "Simulate with loopback devices: 'dd if=/dev/zero of=/tmp/disk.img bs=1M count=100 && mkfs.ext4 /tmp/disk.img'.",
+        activeIncident: {
+          title: "CRITICAL: Database data volume missing - /data mount empty",
+          description: "The database server lost its storage volume. The /data mount point is empty and the database won't start. Volume is attached but not mounted.",
+          severity: "CRITICAL"
+        }
+      },
+      {
+        id: "m3_5",
+        levelNum: 3,
+        title: "The Audit Trail",
+        subtitle: "System logging and audit configuration",
+        category: "Linux",
+        xpReward: 390,
+        story: "MEDIUM: A security auditor is arriving tomorrow and you need to prove that all sudo commands are being logged. The auditd service should be running and the sudo log file must contain the last 10 sudo attempts.",
+        objective: "Write a script '/home/user/audit_check.sh' that checks if 'auditd' is active using 'systemctl', tails the last 10 lines of '/var/log/auth.log', and verifies sudo logging is enabled.",
+        taskDescription: "Create a script that checks auditd service status, inspects auth.log for sudo entries, and generates a compliance report.",
+        initialVfsState: {
+          "/home/user/audit_check.sh": ""
+        },
+        validationRules: [
+          { type: "file_contains", params: { path: "/home/user/audit_check.sh", substring: "systemctl" } },
+          { type: "file_contains", params: { path: "/home/user/audit_check.sh", substring: "auth.log" } },
+          { type: "file_contains", params: { path: "/home/user/audit_check.sh", substring: "sudo" } }
+        ],
+        hints: [
+          "'systemctl is-active auditd' checks if auditd is running",
+          "'grep sudo /var/log/auth.log | tail -10' shows recent sudo attempts",
+          "'journalctl -u auditd --no-pager | tail -5' shows recent audit logs"
+        ],
+        solutionWalkthrough: "Write:\n#!/bin/bash\necho \"=== Audit Service Status ===\"\nsystemctl is-active auditd || echo \"auditd is NOT running!\"\necho \"\"\necho \"=== Recent Sudo Attempts ===\"\ngrep sudo /var/log/auth.log | tail -10\necho \"\"\necho \"=== Compliance Verdict ===\"\necho \"Sudo logging: OK (auth.log contains sudo entries)\"",
+        realWorldUseCase: "Compliance frameworks (SOC2, PCI-DSS, HIPAA) require audit logging for all privileged access. Automated audit checks are run weekly to ensure logging is operational.",
+        commonMistakes: "Assuming auditd is installed (it's not on minimal containers). Checking the wrong log path (some distros use /var/log/secure instead of auth.log).",
+        debuggingTips: "Run 'sudo -k' to clear cached credentials, then run a sudo command to generate a test log entry before running the check.",
+        activeIncident: {
+          title: "MEDIUM: Audit compliance gap - sudo logging not verified",
+          description: "Security auditor requires proof that all sudo commands are logged. The auditd service status and auth.log need verification before tomorrow's audit.",
+          severity: "MEDIUM"
+        }
       }
     ]
   },
   {
     num: 4,
-    name: "PowerShell Fundamentals",
-    rank: "Script Apprentice",
-    description: "Learn the power of object-oriented pipelines, cmdlets, variables, and Windows command execution.",
+    name: "PowerShell Automation",
+    rank: "PowerShell Pro",
+    description: "Master PowerShell scripting for Windows server management and task automation.",
     missions: [
       {
         id: "m4_1",
@@ -726,18 +996,10 @@ export const curriculum: Level[] = [
         realWorldUseCase: "PowerShell is standard across Windows and Azure environments. Unlike Unix shells where you parse text using awk/grep, PowerShell lets you filter properties directly, making automated infrastructure monitoring extremely reliable.",
         commonMistakes: "Using standard operators (>, ==) instead of PowerShell operators (-gt, -eq). This causes compilation crashes.",
         debuggingTips: "Always wrap property filters in curly brackets `{ $_.Property -comparison Value }` with Where-Object."
-      }
-    ]
-  },
-  {
-    num: 5,
-    name: "PowerShell Automation",
-    rank: "Infrastructure Wizard",
-    description: "Automate Windows services, remote systems, parse registry entries, XML/JSON APIs, and manage processes.",
-    missions: [
+      },
       {
-        id: "m5_1",
-        levelNum: 5,
+        id: "m4_2",
+        levelNum: 4,
         title: "The Service Sentinel",
         subtitle: "PowerShell service automation and status monitoring",
         category: "PowerShell",
@@ -767,55 +1029,291 @@ export const curriculum: Level[] = [
         realWorldUseCase: "IIS and SQL servers occasionally crash under memory pressure. Running a scheduled task checking service status and starting it automatically ensures immediate self-healing of production environments.",
         commonMistakes: "Incorrect service name syntax or using standard assignment '=' inside the conditional block instead of comparison '-eq'.",
         debuggingTips: "Test variables using local mocks or check cmdlet parameter documentation to confirm correct properties (e.g., .Status)."
+      },
+      {
+        id: "m4_3",
+        levelNum: 4,
+        title: "The Tempest Cleanup",
+        subtitle: "PowerShell disk cleanup automation",
+        category: "PowerShell",
+        xpReward: 350,
+        story: "HIGH: The CI/CD build server has only 2GB of free space remaining on the C: drive. Temp files from failed builds are accumulating at 500MB per day. You need a PowerShell script that removes files older than 24 hours from C:\\BuildTemp and logs the freed space.",
+        objective: "Write a PowerShell script 'Invoke-Cleanup.ps1' that uses Get-ChildItem with Where-Object to find files older than 1 day in a temp path, removes them, and reports total freed space.",
+        taskDescription: "Create a PowerShell script that scans for old temp files, deletes them, calculates the freed space, and writes a cleanup report.",
+        initialVfsState: {
+          "/home/user/Invoke-Cleanup.ps1": ""
+        },
+        validationRules: [
+          { type: "file_contains", params: { path: "/home/user/Invoke-Cleanup.ps1", substring: "Get-ChildItem" } },
+          { type: "file_contains", params: { path: "/home/user/Invoke-Cleanup.ps1", substring: "Remove-Item" } },
+          { type: "file_contains", params: { path: "/home/user/Invoke-Cleanup.ps1", substring: "LastWriteTime" } }
+        ],
+        hints: [
+          "Use '$oldFiles = Get-ChildItem -Path 'C:\\BuildTemp' | Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-1) }'",
+          "Remove them: $oldFiles | Remove-Item -Force",
+          "Sum sizes: $freed = ($oldFiles | Measure-Object -Property Length -Sum).Sum"
+        ],
+        solutionWalkthrough: "Write:\n$path = 'C:\\BuildTemp'\n$cutoff = (Get-Date).AddDays(-1)\n$oldFiles = Get-ChildItem -Path $path | Where-Object { $_.LastWriteTime -lt $cutoff }\n$freed = ($oldFiles | Measure-Object -Property Length -Sum).Sum\n$oldFiles | Remove-Item -Force\nWrite-Host \"Cleaned $($oldFiles.Count) files, freed $([math]::Round($freed/1MB, 2)) MB\"",
+        realWorldUseCase: "Windows CI/CD build agents accumulate temp files rapidly. Automated cleanup scripts prevent disk-full build failures and keep pipelines running without manual intervention.",
+        commonMistakes: "Using 'Remove-Item' without -Force (fails on read-only files). Forgetting to filter by LastWriteTime (deletes everything). Not converting bytes to MB for readable output.",
+        debuggingTips: "Test the Get-ChildItem filter first: 'Get-ChildItem C:\\BuildTemp | Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-1) }' to preview files.",
+        activeIncident: {
+          title: "HIGH: CI/CD disk space critical - 2GB remaining",
+          description: "The build server has only 2GB of free space. Temp files from failed builds are accumulating at 500MB per day and will cause a complete build freeze within 4 days.",
+          severity: "HIGH"
+        }
+      },
+      {
+        id: "m4_4",
+        levelNum: 4,
+        title: "The Onboarding Crisis",
+        subtitle: "PowerShell user provisioning script",
+        category: "PowerShell",
+        xpReward: 380,
+        story: "HIGH: 20 new contractors start tomorrow and IT hasn't provisioned their accounts. HR sent a CSV with names and departments. You need a PowerShell script that reads 'new_users.csv', creates local user accounts with a default password, and sets the group based on department.",
+        objective: "Write a PowerShell script 'New-UserProvision.ps1' that imports a CSV, creates users with New-LocalUser, and adds them to a group.",
+        taskDescription: "Create a script that reads new_users.csv, extracts Username and Department columns, creates local users, and adds 'Engineering' users to the 'Developers' group.",
+        initialVfsState: {
+          "/home/user/New-UserProvision.ps1": "",
+          "/home/user/new_users.csv": "Username,Department\njdoe,Engineering\nasmith,Sales\nbjohnson,Engineering"
+        },
+        validationRules: [
+          { type: "file_contains", params: { path: "/home/user/New-UserProvision.ps1", substring: "Import-Csv" } },
+          { type: "file_contains", params: { path: "/home/user/New-UserProvision.ps1", substring: "New-LocalUser" } },
+          { type: "file_contains", params: { path: "/home/user/New-UserProvision.ps1", substring: "Add-LocalGroupMember" } }
+        ],
+        hints: [
+          "'$users = Import-Csv new_users.csv' imports the CSV",
+          "Loop: foreach ($user in $users) { New-LocalUser -Name $user.Username -Password (ConvertTo-SecureString 'TempPass123!' -AsPlainText -Force) }",
+          "Add to group: Add-LocalGroupMember -Group 'Developers' -Member $user.Username (only if department is Engineering)"
+        ],
+        solutionWalkthrough: "Write:\n$users = Import-Csv 'new_users.csv'\n$password = ConvertTo-SecureString 'TempPass123!' -AsPlainText -Force\nforeach ($user in $users) {\n  New-LocalUser -Name $user.Username -Password $password\n  if ($user.Department -eq 'Engineering') {\n    Add-LocalGroupMember -Group 'Developers' -Member $user.Username\n  }\n  Write-Host \"Created $($user.Username)\"\n}",
+        realWorldUseCase: "Bulk user provisioning is a weekly HR/IT workflow. Automating it with PowerShell reduces onboarding time from 2 hours to 30 seconds and eliminates manual typos.",
+        commonMistakes: "Not converting the password to a SecureString (New-LocalUser requires it). Forgetting to check if the user already exists before creating.",
+        debuggingTips: "Test with a single user first: 'New-LocalUser -Name testuser -Password (ConvertTo-SecureString 'Test123!' -AsPlainText -Force)'",
+        activeIncident: {
+          title: "HIGH: 20 new contractors starting tomorrow - no accounts",
+          description: "IT received an HR CSV with 20 new contractors starting tomorrow. No user accounts, home directories, or group memberships have been provisioned.",
+          severity: "HIGH"
+        }
+      },
+      {
+        id: "m4_5",
+        levelNum: 4,
+        title: "The Event Log Breach",
+        subtitle: "PowerShell event log forensic analysis",
+        category: "PowerShell",
+        xpReward: 420,
+        story: "CRITICAL: The Security team detected suspicious logins on a domain controller. They need a PowerShell script that queries the Security event log for Event ID 4625 (failed logins) from the last 24 hours, grouped by source IP address.",
+        objective: "Write a PowerShell script 'Get-FailedLogins.ps1' that uses Get-WinEvent to query the Security log for Event ID 4625 and groups results by IP address.",
+        taskDescription: "Create a script that fetches failed login events, filters for the last 24 hours, and outputs a grouped count by IP address.",
+        initialVfsState: {
+          "/home/user/Get-FailedLogins.ps1": ""
+        },
+        validationRules: [
+          { type: "file_contains", params: { path: "/home/user/Get-FailedLogins.ps1", substring: "Get-WinEvent" } },
+          { type: "file_contains", params: { path: "/home/user/Get-FailedLogins.ps1", substring: "4625" } },
+          { type: "file_contains", params: { path: "/home/user/Get-FailedLogins.ps1", substring: "Group-Object" } }
+        ],
+        hints: [
+          "'Get-WinEvent -FilterHashtable @{LogName='Security'; Id=4625; StartTime=(Get-Date).AddDays(-1)}' queries failed logins",
+          "Group by IP: | Group-Object -Property IpAddress",
+          "Select count and name: | Select-Object Count, Name"
+        ],
+        solutionWalkthrough: "Write:\n$failedLogins = Get-WinEvent -FilterHashtable @{\n  LogName='Security'\n  Id=4625\n  StartTime=(Get-Date).AddDays(-1)\n}\n$failedLogins | Group-Object -Property IpAddress | Select-Object Count, Name | Sort-Object Count -Descending",
+        realWorldUseCase: "Security incident response requires rapid event log analysis. PowerShell's Get-WinEvent is the standard tool for querying Windows event logs across domain-joined machines.",
+        commonMistakes: "Using Get-EventLog instead of Get-WinEvent (Get-EventLog is deprecated and slower). Not filtering by time first (queries the entire event log).",
+        debuggingTips: "Test with a simpler filter: 'Get-WinEvent -LogName Security -MaxEvents 50' to see available properties before building the full query.",
+        activeIncident: {
+          title: "CRITICAL: Suspicious logins detected on domain controller",
+          description: "Security team detected anomalous failed login attempts on a domain controller. Need immediate forensic analysis of Event ID 4625 grouped by source IP.",
+          severity: "CRITICAL"
+        }
+      }
+    ]
+  },
+  {
+    num: 5,
+    name: "Infrastructure Engineering",
+    rank: "Infrastructure Wizard",
+    description: "Design, configure, and troubleshoot core infrastructure services and networking.",
+    missions: [
+      {
+        id: "m5_1",
+        levelNum: 5,
+        title: "The Silent Outage",
+        subtitle: "System monitoring and alerting setup",
+        category: "Linux",
+        xpReward: 450,
+        story: "CRITICAL: The primary web server crashed at 2 AM and nobody noticed for 3 hours because monitoring was only checking the load balancer IP. You need to implement a server monitoring script that checks CPU load, memory usage, and disk space, and writes alerts to a log file when thresholds are exceeded.",
+        objective: "Write a script '/home/user/monitor_system.sh' that checks CPU load (threshold 2.0), memory usage (threshold 90%), and disk usage (threshold 85%), alerting if any exceed limits.",
+        taskDescription: "Create a system monitoring script that captures load average, free memory percentage, and disk usage for '/', and writes timestamped alerts to 'system_alerts.log'.",
+        initialVfsState: {
+          "/home/user/monitor_system.sh": ""
+        },
+        validationRules: [
+          { type: "file_contains", params: { path: "/home/user/monitor_system.sh", substring: "load" } },
+          { type: "file_contains", params: { path: "/home/user/monitor_system.sh", substring: "free" } },
+          { type: "file_contains", params: { path: "/home/user/monitor_system.sh", substring: "df" } }
+        ],
+        hints: [
+          "'uptime | awk -F'load average:' '{print $2}' | cut -d, -f1' extracts 1-minute load",
+          "'free | awk '/Mem/ {printf \"%.0f\", $3/$2 * 100}' calculates memory usage %",
+          "'df / | awk 'NR==2 {print $5}' | tr -d '%' gets disk usage %"
+        ],
+        solutionWalkthrough: "Write:\n#!/bin/bash\nALERT_LOG='system_alerts.log'\nLOAD=$(uptime | awk -F'load average:' '{print $2}' | cut -d, -f1)\nMEM=$(free | awk '/Mem/ {printf \"%.0f\", $3/$2 * 100}')\nDISK=$(df / | awk 'NR==2 {print $5}' | tr -d '%')\nif (( $(echo \"$LOAD > 2.0\" | bc -l) )); then echo \"$(date) HIGH LOAD: $LOAD\" >> $ALERT_LOG; fi\nif [ \"$MEM\" -gt 90 ]; then echo \"$(date) HIGH MEMORY: $MEM%\" >> $ALERT_LOG; fi\nif [ \"$DISK\" -gt 85 ]; then echo \"$(date) HIGH DISK: $DISK%\" >> $ALERT_LOG; fi",
+        realWorldUseCase: "Basic system monitoring is the foundation of observability. Every production server should have local health checks that feed into a centralized alerting system like Prometheus or Nagios.",
+        commonMistakes: "Using integer comparison for floating point load values. Not installing 'bc' for floating point arithmetic. Only checking one data point (spike vs sustained load).",
+        debuggingTips: "Run each metric extraction command separately: 'uptime', 'free -m', 'df -h /' to verify the awk parsing works.",
+        activeIncident: {
+          title: "CRITICAL: Web server crashed at 2 AM - undetected for 3 hours",
+          description: "The primary web server crashed but monitoring only checked the load balancer IP. 3 hours of complete outage went unnoticed. Direct server health checks needed.",
+          severity: "CRITICAL"
+        }
+      },
+      {
+        id: "m5_2",
+        levelNum: 5,
+        title: "The Routing Maze",
+        subtitle: "Network routing and connectivity troubleshooting",
+        category: "Linux",
+        xpReward: 480,
+        story: "CRITICAL: A misconfigured router caused the entire 10.0.0.0/16 subnet to become unreachable from the 192.168.1.0/24 office network. You need to trace the network path, identify where packets are being dropped, and document the routing issue.",
+        objective: "Write a script '/home/user/traceroute_diag.sh' that uses 'traceroute' to map the path to 10.0.0.1, checks packet loss with 'ping -c 10', and displays the routing table.",
+        taskDescription: "Create a diagnostic script that traces the route to a target IP, tests packet loss, and captures the IP routing table for analysis.",
+        initialVfsState: {
+          "/home/user/traceroute_diag.sh": ""
+        },
+        validationRules: [
+          { type: "file_contains", params: { path: "/home/user/traceroute_diag.sh", substring: "traceroute" } },
+          { type: "file_contains", params: { path: "/home/user/traceroute_diag.sh", substring: "ping -c" } },
+          { type: "file_contains", params: { path: "/home/user/traceroute_diag.sh", substring: "ip route" } }
+        ],
+        hints: [
+          "'traceroute -n 10.0.0.1' shows each hop without DNS resolution",
+          "'ping -c 10 10.0.0.1' sends 10 packets and reports loss %",
+          "'ip route' shows the kernel routing table"
+        ],
+        solutionWalkthrough: "Write:\n#!/bin/bash\nTARGET='10.0.0.1'\necho \"=== Route Tracing ===\"\ntraceroute -n $TARGET\necho \"\"\necho \"=== Packet Loss Test ===\"\nping -c 10 $TARGET\necho \"\"\necho \"=== Routing Table ===\"\nip route",
+        realWorldUseCase: "Network segmentation issues are a leading cause of microservice communication failures. Traceroute diagnostics are essential for identifying misconfigured firewalls, missing routes, or broken peering.",
+        commonMistakes: "Using traceroute without '-n' (tries DNS resolution for each hop, slow). Only checking one direction (packets may go out one path and return another).",
+        debuggingTips: "Install traceroute if missing: 'apt install inetutils-traceroute'. Compare results from two different source hosts to narrow down the issue.",
+        activeIncident: {
+          title: "CRITICAL: Entire 10.0.0.0/16 subnet unreachable",
+          description: "A misconfigured router has made the entire 10.0.0.0/16 subnet unreachable from the office network. Services are down and users cannot access internal resources.",
+          severity: "CRITICAL"
+        }
+      },
+      {
+        id: "m5_3",
+        levelNum: 5,
+        title: "The Name That Failed",
+        subtitle: "DNS resolution failure investigation",
+        category: "Linux",
+        xpReward: 430,
+        story: "CRITICAL: Users report that 'app.internal.company.com' is unreachable. The application server is running but DNS resolution seems broken. You need to diagnose the DNS chain: check local resolution, query the configured nameservers, and verify the authoritative DNS.",
+        objective: "Write a script '/home/user/dns_diag.sh' that uses 'dig', 'nslookup', and 'host' commands to trace DNS resolution for a domain, showing all steps.",
+        taskDescription: "Create a script that performs full DNS diagnostics: local resolver config check, A record lookup, authoritative nameserver query, and reverse DNS lookup.",
+        initialVfsState: {
+          "/home/user/dns_diag.sh": ""
+        },
+        validationRules: [
+          { type: "file_contains", params: { path: "/home/user/dns_diag.sh", substring: "dig" } },
+          { type: "file_contains", params: { path: "/home/user/dns_diag.sh", substring: "nslookup" } },
+          { type: "file_contains", params: { path: "/home/user/dns_diag.sh", substring: "resolv.conf" } }
+        ],
+        hints: [
+          "'cat /etc/resolv.conf' shows configured DNS servers",
+          "'dig +short example.com' gets the A record",
+          "'nslookup example.com' queries the system resolver"
+        ],
+        solutionWalkthrough: "Write:\n#!/bin/bash\nDOMAIN='example.com'\necho \"=== DNS Resolvers ===\"\ncat /etc/resolv.conf\necho \"\"\necho \"=== A Record Lookup ===\"\ndig +short $DOMAIN\necho \"\"\necho \"=== System Resolver ===\"\nnslookup $DOMAIN\necho \"\"\necho \"=== Authoritative NS ===\"\ndig NS $DOMAIN +short",
+        realWorldUseCase: "DNS failures are among the top 3 causes of application outages. A standardized DNS diagnostic script reduces mean-time-to-resolution from 30 minutes to 2 minutes.",
+        commonMistakes: "Only checking with ping (which may use cached results). Not checking both forward and reverse DNS. Forgetting to check if the DNS server itself is reachable.",
+        debuggingTips: "Test with 'dig @8.8.8.8 example.com' to bypass the local resolver. Check 'ping -c 1 8.8.8.8' first to ensure basic connectivity.",
+        activeIncident: {
+          title: "CRITICAL: DNS resolution failure for app.internal.company.com",
+          description: "Users cannot reach app.internal.company.com. The application server is running but DNS resolution is broken. Full DNS chain diagnosis required.",
+          severity: "CRITICAL"
+        }
+      },
+      {
+        id: "m5_4",
+        levelNum: 5,
+        title: "The Expired Handshake",
+        subtitle: "SSL certificate expiry monitoring",
+        category: "Linux",
+        xpReward: 460,
+        story: "MEDIUM: The e-commerce site's SSL certificate expired at midnight and customers are seeing 'NET::ERR_CERT_DATE_INVALID' errors. You need to build a certificate expiry monitoring script that checks expiration dates and warns when a cert is within 30 days of expiry.",
+        objective: "Write a script '/home/user/check_cert.sh' that uses 'openssl s_client' to fetch a certificate from a remote server and extracts the expiration date.",
+        taskDescription: "Create a script that connects to a server on port 443, downloads the SSL certificate, and displays the issuer, subject, and expiration date.",
+        initialVfsState: {
+          "/home/user/check_cert.sh": ""
+        },
+        validationRules: [
+          { type: "file_contains", params: { path: "/home/user/check_cert.sh", substring: "openssl" } },
+          { type: "file_contains", params: { path: "/home/user/check_cert.sh", substring: "s_client" } },
+          { type: "file_contains", params: { path: "/home/user/check_cert.sh", substring: "enddate" } }
+        ],
+        hints: [
+          "'openssl s_client -connect example.com:443 -servername example.com </dev/null 2>/dev/null' fetches the cert",
+          "Pipe to 'openssl x509 -noout -enddate' to get the expiry date",
+          "Use 'date -d' to compare expiry with current date"
+        ],
+        solutionWalkthrough: "Write:\n#!/bin/bash\nHOST='example.com'\necho \"=== SSL Certificate Check ===\"\necho | openssl s_client -connect $HOST:443 -servername $HOST 2>/dev/null | openssl x509 -noout -issuer -subject -dates\necho \"\"\nEXPIRY=$(echo | openssl s_client -connect $HOST:443 -servername $HOST 2>/dev/null | openssl x509 -noout -enddate | cut -d= -f2)\necho \"Expires: $EXPIRY\"",
+        realWorldUseCase: "SSL certificate expiry causes complete website outages and browser security warnings. Automated monitoring is mandatory for any public-facing service; Let's Encrypt and cert-manager automate renewal but monitoring validates it worked.",
+        commonMistakes: "Not using '-servername' for SNI (many modern hosts require it). Using 's_client' without timeout (can hang on unresponsive hosts).",
+        debuggingTips: "Test with 'openssl s_client -connect google.com:443 -servername google.com < /dev/null' to verify the connection works.",
+        activeIncident: {
+          title: "MEDIUM: SSL certificate expired - customers seeing security errors",
+          description: "The e-commerce site's SSL certificate expired at midnight. Customers are seeing browser security warnings (NET::ERR_CERT_DATE_INVALID) and abandoning purchases.",
+          severity: "MEDIUM"
+        }
+      },
+      {
+        id: "m5_5",
+        levelNum: 5,
+        title: "The Load That Broke",
+        subtitle: "Load balancer health check configuration",
+        category: "Linux",
+        xpReward: 500,
+        story: "CRITICAL: Half of the application servers were taken out of the load balancer pool because the health check endpoint started returning 503 errors due to a shared cache issue. You need to write a script that performs a comprehensive HTTP health check on all backend servers and reports which ones are healthy.",
+        objective: "Write a script '/home/user/healthcheck_http.sh' that uses 'curl' to check HTTP status codes for multiple endpoints and reports pass/fail for each.",
+        taskDescription: "Create a script that checks HTTP endpoints defined in an array, validates the response status code is 200, measures response time, and logs failures.",
+        initialVfsState: {
+          "/home/user/healthcheck_http.sh": ""
+        },
+        validationRules: [
+          { type: "file_contains", params: { path: "/home/user/healthcheck_http.sh", substring: "curl" } },
+          { type: "file_contains", params: { path: "/home/user/healthcheck_http.sh", substring: "http_code" } },
+          { type: "file_contains", params: { path: "/home/user/healthcheck_http.sh", substring: "200" } }
+        ],
+        hints: [
+          "'curl -o /dev/null -s -w \"%{http_code}\" http://localhost:8080/health' returns just the status code",
+          "'curl -o /dev/null -s -w \"%{time_total}\" http://localhost:8080/health' returns response time",
+          "Loop through an array of URLs: for url in \"${URLS[@]}\"; do ... done"
+        ],
+        solutionWalkthrough: "Write:\n#!/bin/bash\nURLS=('http://localhost:8080/health' 'http://localhost:8081/health')\nfor url in \"${URLS[@]}\"; do\n  STATUS=$(curl -o /dev/null -s -w \"%{http_code}\" \"$url\")\n  TIME=$(curl -o /dev/null -s -w \"%{time_total}\" \"$url\")\n  if [ \"$STATUS\" -eq 200 ]; then\n    echo \"OK: $url ($TIME s)\"\n  else\n    echo \"FAIL: $url returned $STATUS ($TIME s)\"\n  fi\ndone",
+        realWorldUseCase: "Load balancer health checks determine whether traffic is routed to a server. A misconfigured health check can take down an entire fleet. Regular validation of health check endpoints prevents cascading failures.",
+        commonMistakes: "Only checking the status code without verifying the response body contains expected content. Not setting curl timeouts (a hanging server blocks the entire check).",
+        debuggingTips: "Test with a single URL first: 'curl -v http://localhost:8080/health' to see the full response. Use '--connect-timeout 5 --max-time 10' to prevent hangs.",
+        activeIncident: {
+          title: "CRITICAL: Load balancer pool draining - health check failures",
+          description: "Half the application servers are being removed from the load balancer pool because the health check endpoint returns 503 errors due to a shared cache issue.",
+          severity: "CRITICAL"
+        }
       }
     ]
   },
   {
     num: 6,
-    name: "DevOps + Infrastructure Automation",
-    rank: "DevOps Operator",
-    description: "Write deployment engines, manage Docker containers and Kubernetes clusters, and automate CI/CD workflows.",
-    missions: [
-      {
-        id: "m6_1",
-        levelNum: 6,
-        title: "The Dock of Docker",
-        subtitle: "Automating containers and health checks",
-        category: "DevOps",
-        xpReward: 400,
-        story: "Production deployment is failing because of runaway ghost containers! Your pipeline needs to scan for running Docker containers that are over 24 hours old and shut them down.",
-        objective: "Create a bash script '/home/user/cleanup_containers.sh' that finds container IDs and runs 'docker stop' on them.",
-        taskDescription: "Write a shell script containing 'docker ps' command filtering commands to isolate containers older than a given timeframe.",
-        initialVfsState: {
-          "/home/user/cleanup_containers.sh": ""
-        },
-        validationRules: [
-          {
-            type: "file_contains",
-            params: { path: "/home/user/cleanup_containers.sh", substring: "docker ps" }
-          }
-        ],
-        hints: [
-          "You can list docker containers using: docker ps -q",
-          "Write a script that executes 'docker ps -q --filter \"status=running\"' and logs them.",
-          "Simply verify you have the command 'docker ps' inside cleanup_containers.sh"
-        ],
-        solutionWalkthrough: "Open cleanup_containers.sh and write:\n#!/bin/bash\necho \"Cleaning up containers...\"\ndocker ps -a -q --filter \"status=exited\" | xargs -r docker rm\nThis removes stopped containers automatically.",
-        realWorldUseCase: "Runaway developer containers quickly exhaust file handles and RAM. Running an automated container garbage collector keeps shared test environments healthy and prevents build pipeline timeouts.",
-        commonMistakes: "Executing docker system prune blindly, which deletes cached build volumes and slows down CI builds.",
-        debuggingTips: "Ensure your docker client is connected to a daemon and verify using 'docker version'."
-      }
-    ]
-  },
-  {
-    num: 7,
-    name: "Security & Red Team Automation",
+    name: "Shell Architecture",
     rank: "Shell Architect",
-    description: "Analyze audit logs, write secure file integrity checkers, detect threat indicators (IOCs), and secure SSH servers.",
+    description: "Build robust shell architectures with security monitoring, error handling, and process supervision.",
     missions: [
       {
         id: "m7_1",
-        levelNum: 7,
+        levelNum: 6,
         title: "The Integrity Warden",
         subtitle: "Building a File Integrity Monitor",
         category: "Security",
@@ -841,18 +1339,119 @@ export const curriculum: Level[] = [
         realWorldUseCase: "Advanced hacker squads modify standard files like sshd or login configurations to keep remote root access. Advanced FIM frameworks like OSSEC or Tripwire automate this checksum tracking across thousands of production nodes.",
         commonMistakes: "Storing baseline files on the same host with write permissions. Attackers can easily edit baseline hashes to match modified binary hashes!",
         debuggingTips: "Always write absolute paths for files when executing system scripts inside automated secure cron routines."
+      },
+      {
+        id: "m6_2",
+        levelNum: 6,
+        title: "The Trap That Saved Christmas",
+        subtitle: "Shell script error handling and signal trapping",
+        category: "Linux",
+        xpReward: 480,
+        story: "CRITICAL: A deployment script ran halfway, then crashed due to a network timeout, leaving the application in a broken state with temp files scattered everywhere. The deployment was unrecoverable and had to be manually rebuilt. You need to write a robust script with proper error handling, cleanup traps, and atomic operations.",
+        objective: "Write a bash script '/home/user/deploy.sh' that uses 'set -e' for fail-fast, creates a temp directory, uses 'trap' to clean up on exit, and validates each step.",
+        taskDescription: "Create a deployment script that sets error handling options, creates a working directory, performs staged operations, and uses a trap to clean up temp files on failure.",
+        initialVfsState: {
+          "/home/user/deploy.sh": ""
+        },
+        validationRules: [
+          { type: "file_contains", params: { path: "/home/user/deploy.sh", substring: "set -e" } },
+          { type: "file_contains", params: { path: "/home/user/deploy.sh", substring: "trap" } },
+          { type: "file_contains", params: { path: "/home/user/deploy.sh", substring: "mktemp" } }
+        ],
+        hints: [
+          "'set -euo pipefail' at the top makes the script exit on any error",
+          "'trap 'rm -rf \"$TMPDIR\"' EXIT' ensures cleanup on exit",
+          "'TMPDIR=$(mktemp -d)' creates a safe temp directory"
+        ],
+        solutionWalkthrough: "Write:\n#!/bin/bash\nset -euo pipefail\nTMPDIR=$(mktemp -d)\ntrap 'rm -rf \"$TMPDIR\"; echo \"Cleaned up temp directory\"' EXIT\necho \"Deploying to $TMPDIR...\"\ncp app.conf \"$TMPDIR/\"\necho \"Config copied\"\ncp app.jar \"$TMPDIR/\"\necho \"Binary copied\"\necho \"Deployment complete\"",
+        realWorldUseCase: "Production deployment scripts must be transactional — they either complete fully or roll back cleanly. Trap-based cleanup prevents the 'half-deployed' state that causes the most production incidents.",
+        commonMistakes: "Not using 'set -e' (script continues after failures). Forgetting 'set -u' (undefined variables silently become empty strings). Not cleaning up on all exit paths (SIGTERM, SIGINT).",
+        debuggingTips: "Test the trap by sending SIGINT during deployment. Verify temp files are removed. Use 'trap -p' to list active traps.",
+        activeIncident: {
+          title: "CRITICAL: Half-deployed application after network timeout",
+          description: "A deployment script crashed mid-way due to a network timeout, leaving the application in an unrecoverable broken state with temp files scattered everywhere.",
+          severity: "CRITICAL"
+        }
+      },
+      {
+        id: "m6_3",
+        levelNum: 6,
+        title: "The Zombie Orphanage",
+        subtitle: "Process supervision and daemon management",
+        category: "Linux",
+        xpReward: 460,
+        story: "HIGH: A background data processing job spawned child processes that became zombies after the parent crashed. These zombie processes are consuming PID table entries and causing the system to run out of PIDs. You need to write a process supervisor script that monitors child processes, reaps zombies, and restarts failed workers.",
+        objective: "Write a script '/home/user/supervisor.sh' that monitors a list of PIDs, checks if they are zombies (defunct), restarts crashed processes, and logs all actions.",
+        taskDescription: "Create a process supervisor that checks /proc for zombie status, kills defunct children, and provides a health report.",
+        initialVfsState: {
+          "/home/user/supervisor.sh": ""
+        },
+        validationRules: [
+          { type: "file_contains", params: { path: "/home/user/supervisor.sh", substring: "zombie" } },
+          { type: "file_contains", params: { path: "/home/user/supervisor.sh", substring: "defunct" } },
+          { type: "file_contains", params: { path: "/home/user/supervisor.sh", substring: "/proc" } }
+        ],
+        hints: [
+          "'ps aux | grep defunct' shows zombie processes",
+          "'awk '{print $1}' /proc/*/status 2>/dev/null' can check process states",
+          "Kill the parent of a zombie to reap it: 'kill -9 $PARENT_PID'",
+          "Use 'wait' in bash to reap child processes"
+        ],
+        solutionWalkthrough: "Write:\n#!/bin/bash\nLOG='supervisor.log'\necho \"$(date): Supervisor started\" >> $LOG\nZOMBIES=$(ps aux | grep -w defunct | grep -v grep)\nif [ -n \"$ZOMBIES\" ]; then\n  echo \"$(date): Found zombie processes\" >> $LOG\n  ps aux | grep -w defunct | grep -v grep >> $LOG\n  PARENT=$(ps aux | grep -w defunct | grep -v grep | awk '{print $2}')\n  kill -9 $PARENT 2>/dev/null\n  echo \"$(date): Zombie parent killed\" >> $LOG\nfi",
+        realWorldUseCase: "Process supervision is critical for background workers, message queue consumers, and data processing pipelines. Zombie accumulation can exhaust system PID limits and crash servers.",
+        commonMistakes: "Trying to kill zombie processes directly (only their parent can reap them). Not handling the case where the parent is init (PID 1).",
+        debuggingTips: "Check '/proc/sys/kernel/pid_max' for the system PID limit. Use 'ps -eo pid,stat,comm | grep Z' to find all zombies.",
+        activeIncident: {
+          title: "HIGH: PID table exhaustion from zombie processes",
+          description: "A crashed parent process left hundreds of zombie children consuming PID table entries. The system is approaching the PID limit and may become unresponsive.",
+          severity: "HIGH"
+        }
+      },
+      {
+        id: "m6_4",
+        levelNum: 6,
+        title: "The Resilient Pipeline",
+        subtitle: "Advanced signal handling and process resilience",
+        category: "Linux",
+        xpReward: 500,
+        story: "MEDIUM: A critical data export job keeps getting killed by OOM (Out of Memory) killer, leaving incomplete exports. The data team loses 6 hours of work each time. You need to build a resilient script that catches termination signals, performs graceful shutdown, and supports resumption.",
+        objective: "Write a script '/home/user/resilient_export.sh' that traps SIGTERM and SIGINT, writes a checkpoint file on interruption, and uses a lock file to prevent concurrent execution.",
+        taskDescription: "Create a resilient script with trap handlers for graceful shutdown, lock file mechanism, and checkpoint-based resumption logic.",
+        initialVfsState: {
+          "/home/user/resilient_export.sh": ""
+        },
+        validationRules: [
+          { type: "file_contains", params: { path: "/home/user/resilient_export.sh", substring: "SIGTERM" } },
+          { type: "file_contains", params: { path: "/home/user/resilient_export.sh", substring: "lock" } },
+          { type: "file_contains", params: { path: "/home/user/resilient_export.sh", substring: "checkpoint" } }
+        ],
+        hints: [
+          "Use 'trap 'cleanup' SIGTERM SIGINT' to catch termination signals",
+          "Use 'mkdir lock_dir || exit 1' as a simple lock mechanism",
+          "Write a checkpoint file with progress: 'echo \"$COUNT\" > checkpoint.txt'",
+          "On restart, read the checkpoint: 'START=$(cat checkpoint.txt 2>/dev/null || echo 0)'"
+        ],
+        solutionWalkthrough: "Write:\n#!/bin/bash\nLOCKDIR='/tmp/export.lock'\nCHECKPOINT='checkpoint.txt'\ncleanup() {\n  echo \"$(date): Interrupted, saving checkpoint...\"\n  echo \"$COUNT\" > $CHECKPOINT\n  rmdir $LOCKDIR 2>/dev/null\n  exit 1\n}\ntrap cleanup SIGTERM SIGINT\nmkdir $LOCKDIR 2>/dev/null || { echo \"Already running\"; exit 1; }\nSTART=$(cat $CHECKPOINT 2>/dev/null || echo 0)\nfor ((COUNT=$START; COUNT<100; COUNT++)); do\n  echo \"Processing item $COUNT\"\n  sleep 1\ndone\necho \"$COUNT\" > $CHECKPOINT\nrmdir $LOCKDIR\necho \"Export complete\"",
+        realWorldUseCase: "Long-running ETL jobs, database migrations, and large file transfers must be resilient to interruptions. Checkpoint-based resumption and lock files prevent data corruption and duplicate processing.",
+        commonMistakes: "Not removing the lock file in the trap handler (leaves stale locks). Using 'exit 1' in trap without proper cleanup of temp resources.",
+        debuggingTips: "Simulate interruption with 'kill -TERM $PID'. Verify the checkpoint file contains the last processed count. Test lock by running two instances simultaneously.",
+        activeIncident: {
+          title: "MEDIUM: Data export job killed by OOM - 6 hours lost",
+          description: "A critical data export job keeps getting killed by the OOM killer, losing hours of processing. The export needs graceful shutdown and checkpoint-based resumption.",
+          severity: "MEDIUM"
+        }
       }
     ]
   },
   {
-    num: 8,
+    num: 7,
     name: "KQL & Data Analysis",
     rank: "Query Artisan",
     description: "Master Kusto Query Language — filter, aggregate, join, and explore data the way Azure Data Explorer, Log Analytics, and Microsoft Sentinel expect you to.",
     missions: [
       {
         id: "m8_1",
-        levelNum: 8,
+        levelNum: 7,
         title: "The Data Explorer",
         subtitle: "Basic table exploration with take, count, distinct",
         category: "KQL",
@@ -881,7 +1480,7 @@ export const curriculum: Level[] = [
       },
       {
         id: "m8_2",
-        levelNum: 8,
+        levelNum: 7,
         title: "The Filter Chronicler",
         subtitle: "Power filtering with where clauses",
         category: "KQL",
@@ -911,7 +1510,7 @@ export const curriculum: Level[] = [
       },
       {
         id: "m8_3",
-        levelNum: 8,
+        levelNum: 7,
         title: "The Column Architect",
         subtitle: "Shaping data with project and extend",
         category: "KQL",
@@ -942,7 +1541,7 @@ export const curriculum: Level[] = [
       },
       {
         id: "m8_4",
-        levelNum: 8,
+        levelNum: 7,
         title: "The Aggregation Artisan",
         subtitle: "Grouping and summarizing with summarize, count, and bin",
         category: "KQL",
@@ -972,7 +1571,7 @@ export const curriculum: Level[] = [
       },
       {
         id: "m8_5",
-        levelNum: 8,
+        levelNum: 7,
         title: "The Join Weaver",
         subtitle: "Combining tables with join operations",
         category: "KQL",
@@ -1003,7 +1602,7 @@ export const curriculum: Level[] = [
       },
       {
         id: "m8_6",
-        levelNum: 8,
+        levelNum: 7,
         title: "The Query Crafter",
         subtitle: "Building maintainable queries with let statements",
         category: "KQL",
@@ -1031,6 +1630,325 @@ export const curriculum: Level[] = [
         realWorldUseCase: "Production KQL queries in Sentinel and Azure Workbooks always use 'let' for maintainability — defining thresholds at the top makes quarterly reviews trivial and prevents magic number bugs.",
         commonMistakes: "Forgetting the semicolon after let statements. Trying to reference a let variable before it's defined (order matters). Mixing up = and == in let assignments.",
         debuggingTips: "Debug each let statement in isolation first. Run 'let X = SigninLogs | take 5; X' to verify a view works before chaining it into the next step."
+      }
+    ]
+  },
+  {
+    num: 8,
+    name: "DevOps & Cloud",
+    rank: "Cloud Engineer",
+    description: "Orchestrate containers, build CI/CD pipelines, and manage cloud infrastructure.",
+    missions: [
+      {
+        id: "m6_1",
+        levelNum: 8,
+        title: "The Dock of Docker",
+        subtitle: "Automating containers and health checks",
+        category: "DevOps",
+        xpReward: 400,
+        story: "Production deployment is failing because of runaway ghost containers! Your pipeline needs to scan for running Docker containers that are over 24 hours old and shut them down.",
+        objective: "Create a bash script '/home/user/cleanup_containers.sh' that finds container IDs and runs 'docker stop' on them.",
+        taskDescription: "Write a shell script containing 'docker ps' command filtering commands to isolate containers older than a given timeframe.",
+        initialVfsState: {
+          "/home/user/cleanup_containers.sh": ""
+        },
+        validationRules: [
+          {
+            type: "file_contains",
+            params: { path: "/home/user/cleanup_containers.sh", substring: "docker ps" }
+          }
+        ],
+        hints: [
+          "You can list docker containers using: docker ps -q",
+          "Write a script that executes 'docker ps -q --filter \"status=running\"' and logs them.",
+          "Simply verify you have the command 'docker ps' inside cleanup_containers.sh"
+        ],
+        solutionWalkthrough: "Open cleanup_containers.sh and write:\n#!/bin/bash\necho \"Cleaning up containers...\"\ndocker ps -a -q --filter \"status=exited\" | xargs -r docker rm\nThis removes stopped containers automatically.",
+        realWorldUseCase: "Runaway developer containers quickly exhaust file handles and RAM. Running an automated container garbage collector keeps shared test environments healthy and prevents build pipeline timeouts.",
+        commonMistakes: "Executing docker system prune blindly, which deletes cached build volumes and slows down CI builds.",
+        debuggingTips: "Ensure your docker client is connected to a daemon and verify using 'docker version'."
+      },
+      {
+        id: "m8_8",
+        levelNum: 8,
+        title: "The Orphaned Networks",
+        subtitle: "Docker network and volume cleanup",
+        category: "DevOps",
+        xpReward: 450,
+        story: "HIGH: The CI server is running out of disk space because dangling Docker volumes and unused networks are accumulating. Over 50 orphaned volumes are consuming 100GB of disk. You need a script that identifies and removes dangling volumes, networks, and stopped containers.",
+        objective: "Write a script '/home/user/docker_cleanup.sh' that uses 'docker volume ls -f dangling=true', 'docker network ls', and 'docker system df' to report and clean up Docker resources.",
+        taskDescription: "Create a comprehensive Docker cleanup script that lists dangling volumes, removes them, prunes unused networks, and reports reclaimed space.",
+        initialVfsState: {
+          "/home/user/docker_cleanup.sh": ""
+        },
+        validationRules: [
+          { type: "file_contains", params: { path: "/home/user/docker_cleanup.sh", substring: "docker volume" } },
+          { type: "file_contains", params: { path: "/home/user/docker_cleanup.sh", substring: "docker network" } },
+          { type: "file_contains", params: { path: "/home/user/docker_cleanup.sh", substring: "dangling" } }
+        ],
+        hints: [
+          "'docker volume ls -f dangling=true' lists unused volumes",
+          "'docker volume prune -f' removes all dangling volumes",
+          "'docker network prune -f' removes unused networks",
+          "'docker system df' shows disk usage by Docker objects"
+        ],
+        solutionWalkthrough: "Write:\n#!/bin/bash\necho \"=== Docker Disk Usage ===\"\ndocker system df\necho \"\"\necho \"=== Dangling Volumes ===\"\ndocker volume ls -f dangling=true\necho \"\"\necho \"=== Cleaning Up ===\"\ndocker volume prune -f\ndocker network prune -f\ndocker container prune -f\necho \"Cleanup complete\"\ndocker system df",
+        realWorldUseCase: "Docker environments accumulate orphaned resources rapidly. CI/CD build agents in particular generate hundreds of dangling volumes from failed builds, exhausting disk space within weeks.",
+        commonMistakes: "Pruning without checking what will be deleted (may remove volumes with important cached data). Not running 'docker system df' before and after to measure reclaimed space.",
+        debuggingTips: "Run 'docker volume ls -q -f dangling=true' first to preview what volumes would be removed. Check 'docker system df -v' for detailed usage per volume.",
+        activeIncident: {
+          title: "HIGH: Docker disk exhaustion - 100GB in dangling volumes",
+          description: "The CI server has over 50 orphaned Docker volumes consuming 100GB of disk. Builds are failing due to insufficient space for container images.",
+          severity: "HIGH"
+        }
+      },
+      {
+        id: "m8_9",
+        levelNum: 8,
+        title: "The Pipeline That Stopped",
+        subtitle: "CI/CD deployment pipeline automation",
+        category: "DevOps",
+        xpReward: 500,
+        story: "CRITICAL: The deployment pipeline failed at 3 AM because the build artifact wasn't properly versioned and the deployment script couldn't find the correct artifact. You need to write a robust CI/CD pipeline script that builds, tags with a version, and deploys an application, with rollback capability.",
+        objective: "Write a script '/home/user/deploy_pipeline.sh' that builds a Docker image with a version tag, pushes it to a registry, and deploys it with health check validation.",
+        taskDescription: "Create a deployment pipeline script that accepts a version parameter, builds a Docker image, tags it, and performs a rolling deployment with health checks.",
+        initialVfsState: {
+          "/home/user/deploy_pipeline.sh": "",
+          "/home/user/Dockerfile": "FROM nginx:alpine\nCOPY index.html /usr/share/nginx/html/"
+        },
+        validationRules: [
+          { type: "file_contains", params: { path: "/home/user/deploy_pipeline.sh", substring: "docker build" } },
+          { type: "file_contains", params: { path: "/home/user/deploy_pipeline.sh", substring: "docker tag" } },
+          { type: "file_contains", params: { path: "/home/user/deploy_pipeline.sh", substring: "docker push" } }
+        ],
+        hints: [
+          "Accept version as argument: VERSION=${1:-latest}",
+          "'docker build -t myapp:$VERSION .' builds and tags in one step",
+          "'docker tag myapp:$VERSION registry.example.com/myapp:$VERSION' prepares for push",
+          "Always check exit codes: 'docker push registry.example.com/myapp:$VERSION || exit 1'"
+        ],
+        solutionWalkthrough: "Write:\n#!/bin/bash\nset -euo pipefail\nVERSION=${1:-$(date +%Y%m%d-%H%M%S)}\nREGISTRY='registry.example.com'\nAPP_NAME='myapp'\necho \"Building $APP_NAME:$VERSION\"\ndocker build -t $APP_NAME:$VERSION .\ndocker tag $APP_NAME:$VERSION $REGISTRY/$APP_NAME:$VERSION\ndocker push $REGISTRY/$APP_NAME:$VERSION\necho \"Deployed $APP_NAME:$VERSION\"",
+        realWorldUseCase: "CI/CD pipelines are the backbone of modern software delivery. A standardized pipeline script with proper tagging, registry push, and rollback support is essential for reliable deployments.",
+        commonMistakes: "Not using unique version tags (overwriting 'latest' makes rollback impossible). Not checking docker build exit codes. Pushing without verifying the image builds correctly.",
+        debuggingTips: "Test the build locally first: 'docker build -t test-app .'. Verify the image exists: 'docker images | grep test-app'. Check registry connectivity: 'curl -I https://registry.example.com/v2/'.",
+        activeIncident: {
+          title: "CRITICAL: Deployment pipeline failed - missing artifact version",
+          description: "CI/CD pipeline failed at 3 AM because the build artifact wasn't properly version tagged. The deployment script couldn't find the correct artifact to deploy.",
+          severity: "CRITICAL"
+        }
+      },
+      {
+        id: "m8_10",
+        levelNum: 8,
+        title: "The Scaling Emergency",
+        subtitle: "Kubernetes pod health and scaling automation",
+        category: "DevOps",
+        xpReward: 550,
+        story: "CRITICAL: A traffic spike caused the payment service to crash. Kubernetes has 3 replicas but they're all unhealthy and returning 502s. You need to write a diagnostic script that checks pod status, restarts unhealthy pods, and scales up replicas during high load.",
+        objective: "Write a script '/home/user/k8s_health.sh' that uses 'kubectl get pods', checks for non-Running status, and performs rolling restart of unhealthy deployments.",
+        taskDescription: "Create a Kubernetes health script that checks pod status across all namespaces, identifies CrashLoopBackOff or Error pods, and logs the incident with timestamps.",
+        initialVfsState: {
+          "/home/user/k8s_health.sh": ""
+        },
+        validationRules: [
+          { type: "file_contains", params: { path: "/home/user/k8s_health.sh", substring: "kubectl" } },
+          { type: "file_contains", params: { path: "/home/user/k8s_health.sh", substring: "CrashLoopBackOff" } },
+          { type: "file_contains", params: { path: "/home/user/k8s_health.sh", substring: "rollout" } }
+        ],
+        hints: [
+          "'kubectl get pods --all-namespaces' lists all pods across namespaces",
+          "'kubectl get pods -o wide --field-selector status.phase!=Running' finds non-running pods",
+          "'kubectl rollout restart deployment/myapp' performs a rolling restart",
+          "Use 'kubectl describe pod' to get detailed failure information"
+        ],
+        solutionWalkthrough: "Write:\n#!/bin/bash\necho \"=== Kubernetes Health Check ===\" > k8s_report.txt\nkubectl get pods --all-namespaces >> k8s_report.txt\necho \"\" >> k8s_report.txt\nUNHEALTHY=$(kubectl get pods --all-namespaces -o jsonpath='{range .items[?(@.status.phase!=\"Running\")]}{.metadata.name}{\" \"}{.status.phase}{\"\\n\"}{end}')\nif [ -n \"$UNHEALTHY\" ]; then\n  echo \"Unhealthy pods found:\" >> k8s_report.txt\n  echo \"$UNHEALTHY\" >> k8s_report.txt\nfi\ncat k8s_report.txt",
+        realWorldUseCase: "Kubernetes cluster health monitoring is essential for production workloads. Automated pod health checks with reporting enable rapid incident response during traffic spikes and service degradation.",
+        commonMistakes: "Only checking pod status without checking the underlying node health. Forgetting that 'Running' status doesn't mean the app is healthy (need readiness probes). Not considering that CrashLoopBackOff includes a backoff delay.",
+        debuggingTips: "Run 'kubectl top pods' to check resource usage. Use 'kubectl logs --previous pod-name' to see logs from the crashed container. Check 'kubectl describe node' for node-level issues.",
+        activeIncident: {
+          title: "CRITICAL: Payment service crash during traffic spike",
+          description: "A 10x traffic spike caused the payment service to crash. All 3 Kubernetes replicas are unhealthy and returning HTTP 502 errors to customers.",
+          severity: "CRITICAL"
+        }
+      }
+    ]
+  },
+  {
+    num: 9,
+    name: "Security Operations",
+    rank: "Security Guardian",
+    description: "Respond to security incidents, detect threats, and harden systems against attacks.",
+    missions: [
+      {
+        id: "m9_1",
+        levelNum: 9,
+        title: "The Midnight Intruder",
+        subtitle: "SSH breach investigation and forensic analysis",
+        category: "Security",
+        xpReward: 500,
+        story: "CRITICAL: SOC detected an unauthorized SSH login from an external IP 203.0.113.50 at 3:00 AM. The attacker accessed the production database server. You must perform forensic analysis: check auth.log for suspicious entries, identify compromised user accounts, list all active SSH sessions, and check for unauthorized SSH keys.",
+        objective: "Write a script '/home/user/ssh_forensics.sh' that checks /var/log/auth.log for failed/successful SSH logins, lists all .ssh/authorized_keys files, shows current SSH sessions, and identifies recently modified user accounts.",
+        taskDescription: "Create a forensics script that parses SSH auth logs for suspicious patterns, enumerates authorized SSH keys across user home directories, and reports active connections.",
+        initialVfsState: {
+          "/home/user/ssh_forensics.sh": ""
+        },
+        validationRules: [
+          { type: "file_contains", params: { path: "/home/user/ssh_forensics.sh", substring: "auth.log" } },
+          { type: "file_contains", params: { path: "/home/user/ssh_forensics.sh", substring: "authorized_keys" } },
+          { type: "file_contains", params: { path: "/home/user/ssh_forensics.sh", substring: "sshd" } }
+        ],
+        hints: [
+          "'grep sshd /var/log/auth.log | grep FAILED' shows failed SSH attempts",
+          "'grep sshd /var/log/auth.log | grep ACCEPTED' shows successful logins",
+          "'find /home/*/.ssh/authorized_keys' lists all authorized SSH keys",
+          "'ss -tnp | grep :22' shows active SSH connections with PIDs"
+        ],
+        solutionWalkthrough: "Write:\n#!/bin/bash\nREPORT='ssh_forensics_report.txt'\necho \"=== SSH Forensic Analysis ===\" > $REPORT\necho \"Date: $(date)\" >> $REPORT\necho \"\" >> $REPORT\necho \"=== Failed SSH Attempts ===\" >> $REPORT\ngrep sshd /var/log/auth.log | grep FAILED >> $REPORT 2>/dev/null\necho \"\" >> $REPORT\necho \"=== Successful Logins ===\" >> $REPORT\ngrep sshd /var/log/auth.log | grep ACCEPTED >> $REPORT 2>/dev/null\necho \"\" >> $REPORT\necho \"=== Authorized Keys ===\" >> $REPORT\nfind /home -name authorized_keys 2>/dev/null >> $REPORT\necho \"\" >> $REPORT\necho \"=== Active SSH Sessions ===\" >> $REPORT\nss -tnp | grep :22 >> $REPORT 2>/dev/null\ncat $REPORT",
+        realWorldUseCase: "SSH brute-force and credential theft are the top initial access vectors in data breaches. Rapid forensic triage of SSH logs is critical for containment and eradication phases of incident response.",
+        commonMistakes: "Only checking /var/log/auth.log on the local host (attackers often delete logs). Not checking for newly added SSH keys. Forgetting to capture active sessions before they disconnect.",
+        debuggingTips: "Check 'last -10' for recent login history. Use 'lsof -i :22' to see open SSH connections. Verify auth.log integrity with 'ls -la /var/log/auth.log'.",
+        activeIncident: {
+          title: "CRITICAL: Unauthorized SSH access detected - external IP 203.0.113.50",
+          description: "SOC detected an unauthorized SSH login from external IP 203.0.113.50 at 3:00 AM. The attacker accessed the production database server. Immediate forensic investigation required.",
+          severity: "CRITICAL"
+        }
+      },
+      {
+        id: "m9_2",
+        levelNum: 9,
+        title: "The Silent Payload",
+        subtitle: "Malware detection and process investigation",
+        category: "Security",
+        xpReward: 530,
+        story: "CRITICAL: Endpoint detection flagged a suspicious process running from /tmp/.crypto/ on a finance workstation. The process is using 90% CPU and making outbound connections to an unknown IP. You need to investigate the process, check its network connections, examine the binary, and kill the malicious process.",
+        objective: "Write a script '/home/user/malware_investigate.sh' that uses 'ps aux' to find suspicious processes, 'ss -tupn' to check network connections, 'lsof' to see open files, and creates a forensic report.",
+        taskDescription: "Create an incident response script that identifies processes running from temp directories, checks for suspicious outbound connections, lists open files by the process, and generates a forensic report.",
+        initialVfsState: {
+          "/home/user/malware_investigate.sh": ""
+        },
+        validationRules: [
+          { type: "file_contains", params: { path: "/home/user/malware_investigate.sh", substring: "ps aux" } },
+          { type: "file_contains", params: { path: "/home/user/malware_investigate.sh", substring: "ss -tupn" } },
+          { type: "file_contains", params: { path: "/home/user/malware_investigate.sh", substring: "lsof" } }
+        ],
+        hints: [
+          "'ps aux | grep /tmp' finds processes running from /tmp directories",
+          "'ss -tupn | grep ESTAB' shows established outbound connections",
+          "'lsof -p PID' lists all files opened by a specific process",
+          "'cat /proc/PID/exe > /tmp/sample.bin' extracts the binary for analysis"
+        ],
+        solutionWalkthrough: "Write:\n#!/bin/bash\nREPORT='malware_report.txt'\necho \"=== Malware Investigation Report ===\" > $REPORT\necho \"Date: $(date)\" >> $REPORT\necho \"\" >> $REPORT\necho \"=== Suspicious Processes ===\" >> $REPORT\nps aux | grep -E '/tmp|/dev/shm' | grep -v grep >> $REPORT\necho \"\" >> $REPORT\necho \"=== Network Connections ===\" >> $REPORT\nss -tupn | grep ESTAB >> $REPORT 2>/dev/null\necho \"\" >> $REPORT\necho \"=== Open Files by Suspicious PIDs ===\" >> $REPORT\nfor pid in $(ps aux | grep -E '/tmp|/dev/shm' | grep -v grep | awk '{print $2}'); do\n  echo \"PID: $pid\" >> $REPORT\n  lsof -p $pid 2>/dev/null >> $REPORT\ndone\ncat $REPORT",
+        realWorldUseCase: "Malware often executes from temp directories (/tmp, /dev/shm) to evade detection. Rapid triage of suspicious processes, network connections, and file handles is the first step in containment.",
+        commonMistakes: "Only checking /tmp (attackers also use /dev/shm, /var/tmp, ~/.cache). Not checking parent process ID (PPID) to find the infection vector. Killing the process without preserving the binary for analysis.",
+        debuggingTips: "Use 'file /proc/PID/exe' to determine binary type. Check 'cat /proc/PID/cmdline' for full command line. Use 'strings /proc/PID/exe | head -50' for quick analysis.",
+        activeIncident: {
+          title: "CRITICAL: Suspicious process detected in /tmp/.crypto/",
+          description: "EDR flagged a process running from /tmp/.crypto/ on a finance workstation. Process is consuming 90% CPU and making outbound connections to an unknown IP address.",
+          severity: "CRITICAL"
+        }
+      },
+      {
+        id: "m9_3",
+        levelNum: 9,
+        title: "The Open Gates",
+        subtitle: "Firewall hardening and port audit",
+        category: "Security",
+        xpReward: 480,
+        story: "HIGH: A security scan revealed 15 open ports on the production web server, including unnecessary services like Telnet (23), FTP (21), and a Redis server (6379) exposed to the internet. You need to audit all listening ports, identify unauthorized services, and write a firewall configuration that only allows essential ports (80, 443, 22 from bastion).",
+        objective: "Write a script '/home/user/port_audit.sh' that scans listening ports with 'ss -tulnp', identifies non-standard services, and generates an iptables/nftables hardening rule set.",
+        taskDescription: "Create a port audit script that lists all listening TCP/UDP ports, identifies services on non-standard ports, checks iptables rules, and generates a hardening report with recommended firewall rules.",
+        initialVfsState: {
+          "/home/user/port_audit.sh": ""
+        },
+        validationRules: [
+          { type: "file_contains", params: { path: "/home/user/port_audit.sh", substring: "ss -tulnp" } },
+          { type: "file_contains", params: { path: "/home/user/port_audit.sh", substring: "iptables" } },
+          { type: "file_contains", params: { path: "/home/user/port_audit.sh", substring: "LISTEN" } }
+        ],
+        hints: [
+          "'ss -tulnp' shows all listening TCP and UDP ports with process info",
+          "'iptables -L -n -v' lists current firewall rules with packet counters",
+          "Use 'lsof -i :PORT' to identify which application owns a port",
+          "Check /etc/services for standard port-to-service mappings"
+        ],
+        solutionWalkthrough: "Write:\n#!/bin/bash\nREPORT='port_audit_report.txt'\necho \"=== Port Audit Report ===\" > $REPORT\necho \"Date: $(date)\" >> $REPORT\necho \"\" >> $REPORT\necho \"=== Listening Ports ===\" >> $REPORT\nss -tulnp >> $REPORT 2>/dev/null\necho \"\" >> $REPORT\necho \"=== Current Firewall Rules ===\" >> $REPORT\niptables -L -n -v >> $REPORT 2>/dev/null || echo \"iptables not available\" >> $REPORT\necho \"\" >> $REPORT\necho \"=== Non-Standard Ports (not 22, 80, 443) ===\" >> $REPORT\nss -tulnp | awk '{print $5}' | grep -E ':[0-9]+' | grep -vE ':(22|80|443)\"' >> $REPORT\ncat $REPORT",
+        realWorldUseCase: "Exposed unnecessary ports are the leading cause of initial access in breaches. Regular port audits and firewall hardening are mandatory compliance requirements for PCI-DSS, SOC2, and ISO 27001.",
+        commonMistakes: "Only checking TCP ports and ignoring UDP. Assuming iptables is the firewall in use (modern systems use nftables or firewalld). Forgetting that IPv6 might have different rules.",
+        debuggingTips: "Use 'nmap -sT -p- localhost' for a complete TCP port scan. Check 'ufw status' for Ubuntu, 'firewall-cmd --list-all' for RHEL/CentOS. Verify with 'netstat -tulpn' as fallback.",
+        activeIncident: {
+          title: "HIGH: 15 open ports detected - unauthorized services exposed",
+          description: "Security scan revealed 15 open ports on production web server including Telnet (23), FTP (21), and Redis (6379) exposed to the internet. Immediate hardening required.",
+          severity: "HIGH"
+        }
+      },
+      {
+        id: "m9_4",
+        levelNum: 9,
+        title: "The Ransomware Countdown",
+        subtitle: "Ransomware detection and recovery simulation",
+        category: "Security",
+        xpReward: 600,
+        story: "CRITICAL: A user reported that their files have been renamed with '.encrypted' extension and a ransom note named 'README_TO_DECRYPT.txt' appeared on their desktop. The ransomware may be spreading via network shares. You need to write a script that detects encrypted file patterns, identifies the patient-zero machine, checks for ransom notes, and isolates the infected machine by blocking its network connections.",
+        objective: "Write a script '/home/user/ransomware_response.sh' that scans for files with suspicious extensions (.encrypted, .crypted, .locked), identifies the infection scope, checks network connections from the affected host, and generates an incident report.",
+        taskDescription: "Create a ransomware incident response script that finds recently modified files with suspicious extensions, counts affected files, checks for ransom notes, and logs network connections for containment planning.",
+        initialVfsState: {
+          "/home/user/ransomware_response.sh": ""
+        },
+        validationRules: [
+          { type: "file_contains", params: { path: "/home/user/ransomware_response.sh", substring: "find" } },
+          { type: "file_contains", params: { path: "/home/user/ransomware_response.sh", substring: "encrypted" } },
+          { type: "file_contains", params: { path: "/home/user/ransomware_response.sh", substring: "README" } }
+        ],
+        hints: [
+          "'find /home -name '*.encrypted' -mmin -60' finds files encrypted in the last hour",
+          "'find /home -name 'README*' -newer /tmp' finds ransom notes created recently",
+          "'ss -tupn | grep ESTAB' identifies current network connections for containment",
+          "Count affected files: 'find /home -name '*.encrypted' | wc -l'"
+        ],
+        solutionWalkthrough: "Write:\n#!/bin/bash\nREPORT='ransomware_incident.txt'\nSCAN_DIR=${1:-/home}\necho \"=== Ransomware Incident Response ===\" > $REPORT\necho \"Scan started: $(date)\" >> $REPORT\necho \"Scan directory: $SCAN_DIR\" >> $REPORT\necho \"\" >> $REPORT\necho \"=== Encrypted Files Found ===\" >> $REPORT\nfind $SCAN_DIR -type f \( -name '*.encrypted' -o -name '*.crypted' -o -name '*.locked' \) -mmin -120 >> $REPORT 2>/dev/null\nCOUNT=$(find $SCAN_DIR -type f \( -name '*.encrypted' -o -name '*.crypted' -o -name '*.locked' \) -mmin -120 | wc -l)\necho \"Total affected files: $COUNT\" >> $REPORT\necho \"\" >> $REPORT\necho \"=== Ransom Notes ===\" >> $REPORT\nfind $SCAN_DIR -name 'README*' -o -name 'DECRYPT*' -o -name 'HOW_TO*' >> $REPORT 2>/dev/null\necho \"\" >> $REPORT\necho \"=== Active Network Connections (for containment) ===\" >> $REPORT\nss -tupn | grep ESTAB >> $REPORT 2>/dev/null\necho \"\" >> $REPORT\necho \"=== Recommended Actions ===\" >> $REPORT\necho \"1. Isolate affected host from network immediately\" >> $REPORT\necho \"2. Do NOT pay the ransom\" >> $REPORT\necho \"3. Preserve encrypted files for forensics\" >> $REPORT\necho \"4. Check network shares for propagation\" >> $REPORT\necho \"5. Restore from offline backups\" >> $REPORT\ncat $REPORT",
+        realWorldUseCase: "Ransomware attacks have a critical window of minutes to hours before full encryption. A standardized incident response script reduces containment time from hours to minutes, potentially saving millions in ransom demands.",
+        commonMistakes: "Scanning only local drives (ransomware spreads via network shares). Rebooting the infected machine (loses volatile forensics data). Deleting encrypted files before forensic analysis.",
+        debuggingTips: "Check for ransom note variants: 'README', 'DECRYPT', 'HOW_TO', 'RECOVERY'. Use 'stat' on encrypted files to determine encryption timestamp. Check 'ps aux | grep -i ransom' for running ransomware processes.",
+        activeIncident: {
+          title: "CRITICAL: Ransomware detected - files being encrypted across network",
+          description: "User reports files renamed with '.encrypted' extension. Ransom note 'README_TO_DECRYPT.txt' found on desktop. Possible network share propagation.",
+          severity: "CRITICAL"
+        }
+      },
+      {
+        id: "m9_5",
+        levelNum: 9,
+        title: "The Insider Trail",
+        subtitle: "Data exfiltration detection and user behavior analysis",
+        category: "Security",
+        xpReward: 550,
+        story: "HIGH: HR reports that a developer is leaving the company under contentious circumstances. Security needs to audit their recent activity: large file transfers, SSH connections to unusual IPs, sudo command history, and access to sensitive databases. You need to build a user behavior analytics script that investigates a specific user's recent activity.",
+        objective: "Write a script '/home/user/user_audit.sh' that takes a username as an argument and investigates their: bash history, sudo commands, recently modified files, SSH logins, and active processes.",
+        taskDescription: "Create a user activity audit script that accepts a username parameter, scans ~/.bash_history for sensitive commands, checks /var/log/auth.log for their SSH activity, lists their running processes, and finds recently modified files owned by the user.",
+        initialVfsState: {
+          "/home/user/user_audit.sh": ""
+        },
+        validationRules: [
+          { type: "file_contains", params: { path: "/home/user/user_audit.sh", substring: "bash_history" } },
+          { type: "file_contains", params: { path: "/home/user/user_audit.sh", substring: "sudo" } },
+          { type: "file_contains", params: { path: "/home/user/user_audit.sh", substring: "auth.log" } }
+        ],
+        hints: [
+          "Accept username: USERNAME=${1:?'Usage: $0 <username>'}",
+          "Read history: cat /home/$USERNAME/.bash_history | tail -50",
+          "Find sudo use: grep $USERNAME /var/log/auth.log | grep sudo",
+          "Find their processes: ps -u $USERNAME",
+          "Recently modified files: find /home/$USERNAME -mmin -1440 -type f"
+        ],
+        solutionWalkthrough: "Write:\n#!/bin/bash\nUSERNAME=${1:?'Usage: $0 <username>'}\nREPORT=\"user_audit_${USERNAME}.txt\"\necho \"=== User Activity Audit: $USERNAME ===\" > $REPORT\necho \"Date: $(date)\" >> $REPORT\necho \"\" >> $REPORT\necho \"=== Recent Bash History ===\" >> $REPORT\ncat /home/$USERNAME/.bash_history 2>/dev/null | tail -50 >> $REPORT\necho \"\" >> $REPORT\necho \"=== Sudo Commands ===\" >> $REPORT\ngrep $USERNAME /var/log/auth.log 2>/dev/null | grep sudo >> $REPORT\necho \"\" >> $REPORT\necho \"=== SSH Activity ===\" >> $REPORT\ngrep $USERNAME /var/log/auth.log 2>/dev/null | grep sshd >> $REPORT\necho \"\" >> $REPORT\necho \"=== Running Processes ===\" >> $REPORT\nps -u $USERNAME 2>/dev/null >> $REPORT\necho \"\" >> $REPORT\necho \"=== Recently Modified Files (last 24h) ===\" >> $REPORT\nfind /home/$USERNAME -mmin -1440 -type f 2>/dev/null >> $REPORT\ncat $REPORT",
+        realWorldUseCase: "Insider threat detection is a top priority for SOC teams. User behavior analytics investigate anomalous file access, after-hours logins, and data exfiltration patterns to prevent intellectual property theft.",
+        commonMistakes: "Only checking bash history (users can use other shells or delete history). Not checking for rsync/scp file transfers. Ignoring USB mount logs and browser downloads.",
+        debuggingTips: "Check 'last $USERNAME' for login history. Use 'lsof -u $USERNAME' for all open files. Check 'find /tmp -user $USERNAME' for suspicious temp files. Review 'journalctl _UID=$(id -u $USERNAME)' for systemd logs.",
+        activeIncident: {
+          title: "HIGH: Insider threat investigation - departing employee",
+          description: "A developer is leaving under contentious circumstances. Security needs to audit their recent activity for data exfiltration: large file transfers, unusual SSH connections, and sensitive database access.",
+          severity: "HIGH"
+        }
       }
     ]
   }
