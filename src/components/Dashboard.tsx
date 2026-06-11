@@ -133,20 +133,18 @@ const Dashboard: React.FC = () => {
               <div className="text-xs text-cyber-muted">Level-based challenges</div>
             </button>
             <div className="border-t border-cyber-border/30 my-2" />
-            <h2 className="text-xs font-bold text-cyber-muted uppercase tracking-widest px-2 mb-2">Missions</h2>
+            <h2 className="text-xs font-bold text-cyber-muted uppercase tracking-widest px-2 mb-2">Levels</h2>
             <button
               onClick={() => { setViewMode('sql-missions'); setSelectedMission(null); }}
               className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
                 viewMode === 'sql-missions'
-                  ? 'bg-cyber-primary/20 text-cyber-primary border border-cyber-primary/30'
+                  ? 'bg-cyber-accent/20 text-cyber-accent border border-cyber-accent/30'
                   : 'text-cyber-text hover:bg-cyber-border/30'
               }`}
             >
               <div className="font-medium">SQL Missions</div>
               <div className="text-xs text-cyber-muted">16 SQL challenges across all levels</div>
             </button>
-            <div className="border-t border-cyber-border/30 my-2" />
-            <h2 className="text-xs font-bold text-cyber-muted uppercase tracking-widest px-2 mb-2">Levels</h2>
             {curriculum.map((level, i) => (
               <button
                 key={i}
