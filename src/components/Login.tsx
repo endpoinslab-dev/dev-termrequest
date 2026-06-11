@@ -2,20 +2,23 @@ import React, { useState } from 'react';
 import { useAuth } from './Auth';
 
 const Login: React.FC = () => {
-  const { login, register } = useAuth();
+  const { signUp, signIn } = useAuth();
   const [isRegister, setIsRegister] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSubmitting(true);
     const err = isRegister
-      ? register(name, email, password)
-      : login(email, password);
+      ? await signUp(name, email, password)
+      : await signIn(email, password);
     if (err) setError(err);
+    setSubmitting(false);
   };
 
   return (
@@ -53,12 +56,19 @@ const Login: React.FC = () => {
           />
 
           {error && <p className="text-red-400 text-sm">{error}</p>}
+          {isRegister && !error && (
+            <p className="text-yellow-400 text-xs">
+              After registering, check your email for a confirmation link (or check spam).
+              You can also enable "Allow unconfirmed users" in Supabase Auth settings to skip this step.
+            </p>
+          )}
 
           <button
             type="submit"
-            className="w-full py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold transition-colors"
+            disabled={submitting}
+            className="w-full py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold transition-colors disabled:opacity-50"
           >
-            {isRegister ? 'Create Account' : 'Sign In'}
+            {submitting ? 'Please wait...' : isRegister ? 'Create Account' : 'Sign In'}
           </button>
         </form>
 

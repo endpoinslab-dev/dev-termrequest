@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { curriculum, Mission } from '../data/curriculum';
 import Terminal from './Terminal';
 import Wizard from './Wizard';
 import { useAuth } from './Auth';
+import { supabase } from '../lib/supabase';
 
 type ViewMode = 'missions' | 'sql-missions' | 'wizard-linux' | 'wizard-powershell' | 'wizard-kql' | 'wizard-vim' | 'wizard-sql';
 
@@ -10,7 +11,7 @@ const LogoutBtn: React.FC = () => {
   const { user, logout } = useAuth();
   return (
     <button onClick={logout} className="text-xs text-cyber-accent border border-cyber-accent/30 bg-cyber-accent/10 px-3 py-1 rounded font-medium hover:bg-cyber-accent/20 transition-colors" title="Logout">
-      {user?.name} (Logout)
+      {user?.email} (Logout)
     </button>
   );
 };
@@ -21,28 +22,48 @@ const Dashboard: React.FC = () => {
   const [completedMissions, setCompletedMissions] = useState<string[]>([]);
   const [xp, setXp] = useState(0);
   const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [currentLevel, setCurrentLevel] = useState(0);
   const [viewMode, setViewMode] = useState<ViewMode>('missions');
 
-  const storageKey = `progress_${user?.email}`;
+  const levelInfo = curriculum[currentLevel];
 
   useEffect(() => {
     if (!user) return;
-    const saved = localStorage.getItem(storageKey);
-    if (saved) {
-      const data = JSON.parse(saved);
-      setCompletedMissions(data.completed || []);
-      setXp(data.xp || 0);
-    }
-    setLoaded(true);
-  }, [user?.email]);
+    setLoaded(false);
+    supabase
+      .from('user_progress')
+      .select('completed_missions, xp')
+      .eq('user_id', user.id)
+      .single()
+      .then(({ data, error }) => {
+        if (data && !error) {
+          setCompletedMissions(data.completed_missions || []);
+          setXp(data.xp || 0);
+        } else if (error && error.code === 'PGRST116') {
+          setCompletedMissions([]);
+          setXp(0);
+        }
+        setLoaded(true);
+      });
+  }, [user?.id]);
+
+  const saveProgress = useCallback(async (missions: string[], totalXp: number) => {
+    if (!user || !loaded) return;
+    setSaving(true);
+    await supabase.from('user_progress').upsert({
+      user_id: user.id,
+      completed_missions: missions,
+      xp: totalXp,
+    }, { onConflict: 'user_id' });
+    setSaving(false);
+  }, [user?.id, loaded]);
 
   useEffect(() => {
     if (!user || !loaded) return;
-    localStorage.setItem(storageKey, JSON.stringify({ completed: completedMissions, xp }));
-  }, [completedMissions, xp, loaded]);
-
-  const levelInfo = curriculum[currentLevel];
+    const timer = setTimeout(() => saveProgress(completedMissions, xp), 500);
+    return () => clearTimeout(timer);
+  }, [completedMissions, xp, loaded, saveProgress]);
 
   const isMissionAvailable = (mission: Mission) => {
     const idx = levelInfo.missions.findIndex(m => m.id === mission.id);
@@ -54,6 +75,12 @@ const Dashboard: React.FC = () => {
     const total = levelInfo.missions.length;
     const done = levelInfo.missions.filter(m => completedMissions.includes(m.id)).length;
     return total > 0 ? (done / total) * 100 : 0;
+  };
+
+  const handleMissionComplete = (mission: Mission) => {
+    setCompletedMissions(p => [...p, mission.id]);
+    setXp(p => p + mission.xpReward);
+    setSelectedMission(null);
   };
 
   return (
@@ -167,6 +194,7 @@ const Dashboard: React.FC = () => {
           <div className="h-2 bg-cyber-border/30 rounded overflow-hidden">
             <div className="h-full bg-cyber-primary rounded transition-all duration-500" style={{ width: `${levelProgress()}%` }} />
           </div>
+          {saving && <div className="text-xs text-cyber-muted mt-1 animate-pulse">Saving...</div>}
         </div>
       </aside>
 
@@ -279,11 +307,7 @@ const Dashboard: React.FC = () => {
               <button onClick={() => setSelectedMission(null)} className="text-sm text-cyber-muted hover:text-cyber-text border border-cyber-border px-3 py-1 rounded">← Back</button>
             </header>
             <div className="flex-1 flex flex-col min-h-0">
-              <Terminal mission={selectedMission} onMissionComplete={() => {
-                setCompletedMissions(p => [...p, selectedMission.id]);
-                setXp(p => p + selectedMission.xpReward);
-                setSelectedMission(null);
-              }} />
+              <Terminal mission={selectedMission} onMissionComplete={() => handleMissionComplete(selectedMission)} />
             </div>
           </div>
         )}
