@@ -4,7 +4,7 @@ import Terminal from './Terminal';
 import Wizard from './Wizard';
 import { useAuth } from './Auth';
 
-type ViewMode = 'missions' | 'wizard-linux' | 'wizard-powershell' | 'wizard-kql' | 'wizard-vim';
+type ViewMode = 'missions' | 'wizard-linux' | 'wizard-powershell' | 'wizard-kql' | 'wizard-vim' | 'wizard-sql';
 
 const LogoutBtn: React.FC = () => {
   const { user, logout } = useAuth();
@@ -111,6 +111,17 @@ const Dashboard: React.FC = () => {
               <div className="text-xs text-cyber-muted">Modal editor command reference</div>
             </button>
             <button
+              onClick={() => { setViewMode('wizard-sql'); setSelectedMission(null); }}
+              className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
+                viewMode === 'wizard-sql'
+                  ? 'bg-cyber-accent/20 text-cyber-accent border border-cyber-accent/30'
+                  : 'text-cyber-text hover:bg-cyber-border/30'
+              }`}
+            >
+              <div className="font-medium">SQL Query Wizard</div>
+              <div className="text-xs text-cyber-muted">Relational database query reference</div>
+            </button>
+            <button
               onClick={() => { setViewMode('missions'); setSelectedMission(null); }}
               className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
                 viewMode === 'missions'
@@ -161,6 +172,8 @@ const Dashboard: React.FC = () => {
           <Wizard trackId="kql" onBack={() => setViewMode('missions')} />
         ) : viewMode === 'wizard-vim' ? (
           <Wizard trackId="vim" onBack={() => setViewMode('missions')} />
+        ) : viewMode === 'wizard-sql' ? (
+          <Wizard trackId="sql" onBack={() => setViewMode('missions')} />
         ) : !selectedMission ? (
           <div className="flex-1 overflow-y-auto p-6">
             <div className="mb-6">

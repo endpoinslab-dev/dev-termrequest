@@ -3,7 +3,7 @@ export interface Mission {
   levelNum: number;
   title: string;
   subtitle: string;
-  category: "Linux" | "PowerShell" | "DevOps" | "Security" | "KQL";
+  category: "Linux" | "PowerShell" | "DevOps" | "Security" | "KQL" | "SQL";
   xpReward: number;
   story: string;
   objective: string;
@@ -605,6 +605,48 @@ export const curriculum: Level[] = [
         realWorldUseCase: "Environment variables control script behavior dynamically in CI/CD pipelines (GitHub Actions, GitLab CI). Checking if they are present before proceeding avoids fatal run-time exceptions.",
         commonMistakes: "Spacing in bash brackets is critical! Writing [ -z \"$VAR\" ] is correct. Writing [-z \"$VAR\"] will fail with syntactical errors.",
         debuggingTips: "In bash, spaces around '[', ']', and '==' are operators. Ensure they have spaces on both sides."
+      },
+      {
+        id: "m1_3",
+        levelNum: 1,
+        title: "The Data Warehouse",
+        subtitle: "Basic SELECT with incident scenario",
+        category: "SQL",
+        xpReward: 100,
+        story: "CRITICAL: A production database server just crashed and the on-call engineer needs to verify the 'users' table is still intact. You have shell access to the replica. Write a SQL query to verify the users table exists and has the expected columns by selecting a sample of rows.",
+        objective: "Write a SQL SELECT query to retrieve all columns and the first 10 rows from the 'users' table.",
+        taskDescription: "Execute 'SELECT * FROM users LIMIT 10;' to verify the table structure and data integrity.",
+        validationRules: [{ type: "command_contains", params: { substrings: ["SELECT"] } }],
+        hints: [
+          "Use SELECT * to fetch all columns",
+          "LIMIT 10 restricts the result to the first 10 rows",
+          "The table name is 'users'"
+        ],
+        solutionWalkthrough: "Run: SELECT * FROM users LIMIT 10; This returns the first 10 rows of the users table with all columns.",
+        realWorldUseCase: "After a database crash recovery, the first step is always verifying table integrity with a SELECT query. DBAs run this across all critical tables before declaring the incident resolved.",
+        commonMistakes: "Forgetting the semicolon at the end. Using LIMIT without specifying a number. Selecting from a misspelled table name.",
+        debuggingTips: "Run '\\dt' in psql or 'SHOW TABLES;' in MySQL to list available tables first."
+      },
+      {
+        id: "m1_4",
+        levelNum: 1,
+        title: "The Customer Filter",
+        subtitle: "WHERE, AND/OR with incident",
+        category: "SQL",
+        xpReward: 100,
+        story: "MEDIUM: The billing team reports that customers in the 'Platinum' tier from the region 'EU' are being incorrectly charged. You need to find all affected customers using the 'customers' table by filtering for both conditions.",
+        objective: "Write a SQL query with WHERE and AND to find customers who are in the 'Platinum' tier AND located in the 'EU' region.",
+        taskDescription: "Execute 'SELECT * FROM customers WHERE tier = 'Platinum' AND region = 'EU';' to identify the affected accounts.",
+        validationRules: [{ type: "command_contains", params: { substrings: ["SELECT", "WHERE"] } }],
+        hints: [
+          "Use WHERE to filter rows based on conditions",
+          "Use AND to combine multiple conditions that must all be true",
+          "String values in SQL are enclosed in single quotes"
+        ],
+        solutionWalkthrough: "Run: SELECT * FROM customers WHERE tier = 'Platinum' AND region = 'EU'; This returns all Platinum-tier customers in the EU region.",
+        realWorldUseCase: "Filtering by multiple criteria is the foundation of customer segmentation, billing audits, and targeted notifications. Every CRM and billing system relies on multi-condition WHERE clauses.",
+        commonMistakes: "Using double quotes instead of single quotes for strings. Using = instead of LIKE for pattern matching. Forgetting AND between conditions.",
+        debuggingTips: "Start with SELECT * FROM customers LIMIT 5 to see column names, then add WHERE conditions one at a time."
       }
     ]
   },
@@ -781,6 +823,48 @@ export const curriculum: Level[] = [
           description: "After an unexpected crash, the application refuses to restart because a stale PID file exists claiming the old process is still running.",
           severity: "MEDIUM"
         }
+      },
+      {
+        id: "m2_6",
+        levelNum: 2,
+        title: "The Sorting Spiral",
+        subtitle: "ORDER BY, LIMIT, DISTINCT with incident",
+        category: "SQL",
+        xpReward: 100,
+        story: "HIGH: The product team needs the top 5 most expensive products in the catalog to investigate a pricing error. Duplicate entries were accidentally inserted during a data migration. You need to find the distinct top 5 products by price.",
+        objective: "Write a SQL query that selects distinct products, orders them by price descending, and limits to the top 5.",
+        taskDescription: "Execute 'SELECT DISTINCT name, price FROM products ORDER BY price DESC LIMIT 5;' to find the top 5 most expensive distinct products.",
+        validationRules: [{ type: "command_contains", params: { substrings: ["ORDER BY", "LIMIT", "DISTINCT"] } }],
+        hints: [
+          "DISTINCT removes duplicate rows from the result",
+          "ORDER BY price DESC sorts from highest to lowest",
+          "LIMIT 5 keeps only the first 5 rows"
+        ],
+        solutionWalkthrough: "Run: SELECT DISTINCT name, price FROM products ORDER BY price DESC LIMIT 5; This returns the 5 highest-priced distinct products.",
+        realWorldUseCase: "E-commerce platforms use ORDER BY and LIMIT for leaderboards, pricing audits, and inventory top-sellers reports. DISTINCT prevents skewed results from duplicate data.",
+        commonMistakes: "Putting LIMIT before ORDER BY (LIMIT applies after ORDER BY). Forgetting DESC sorts ascending by default. Using DISTINCT on only one column but selecting multiple.",
+        debuggingTips: "First run 'SELECT price FROM products ORDER BY price DESC' without LIMIT to see all prices, then add LIMIT 5."
+      },
+      {
+        id: "m2_7",
+        levelNum: 2,
+        title: "The Missing Products",
+        subtitle: "IN, BETWEEN, LIKE with incident",
+        category: "SQL",
+        xpReward: 100,
+        story: "MEDIUM: The inventory reconciliation shows discrepancies in warehouse IDs 101, 203, and 307. Also, products with SKUs starting with 'DIS_' appear to be mislabeled. You need to find all products in these specific warehouses and all discontinued items.",
+        objective: "Write a SQL query using IN and LIKE to find products in specific warehouses and discontinued SKU patterns.",
+        taskDescription: "Execute 'SELECT * FROM inventory WHERE warehouse_id IN (101, 203, 307) OR sku LIKE 'DIS_%';' to identify affected items.",
+        validationRules: [{ type: "command_contains", params: { substrings: ["IN", "LIKE"] } }],
+        hints: [
+          "IN lets you specify multiple values in a WHERE clause",
+          "LIKE '%pattern%' matches patterns with % as wildcard",
+          "Use OR to combine the warehouse and SKU conditions"
+        ],
+        solutionWalkthrough: "Run: SELECT * FROM inventory WHERE warehouse_id IN (101, 203, 307) OR sku LIKE 'DIS_%'; This finds all products in the specified warehouses or with discontinued SKUs.",
+        realWorldUseCase: "Inventory reconciliation queries use IN for specific warehouse IDs and LIKE for pattern matching SKU formats. These are daily tools for supply chain engineers.",
+        commonMistakes: "Using = instead of LIKE for pattern matching. Forgetting the % wildcard in LIKE patterns. Using commas instead of parentheses in IN.",
+        debuggingTips: "Test the LIKE pattern first: 'SELECT DISTINCT sku FROM inventory WHERE sku LIKE 'DIS_%'' to verify the pattern matches."
       }
     ]
   },
@@ -955,6 +1039,49 @@ export const curriculum: Level[] = [
           description: "Security auditor requires proof that all sudo commands are logged. The auditd service status and auth.log need verification before tomorrow's audit.",
           severity: "MEDIUM"
         }
+      },
+      {
+        id: "m3_6",
+        levelNum: 3,
+        title: "The Revenue Report",
+        subtitle: "GROUP BY, aggregation with incident",
+        category: "SQL",
+        xpReward: 100,
+        story: "CRITICAL: The CFO needs an urgent revenue breakdown by product category for this quarter. A data pipeline failure may have corrupted the aggregation tables. You need to write a query that groups payments by category and calculates total revenue, average transaction value, and transaction count.",
+        objective: "Write a SQL query with GROUP BY that uses SUM, AVG, and COUNT aggregation functions on the payments table.",
+        taskDescription: "Execute 'SELECT category, SUM(amount) AS total_revenue, AVG(amount) AS avg_transaction, COUNT(*) AS tx_count FROM payments GROUP BY category ORDER BY total_revenue DESC;' to generate the revenue report.",
+        validationRules: [{ type: "command_contains", params: { substrings: ["GROUP BY", "SUM", "COUNT"] } }],
+        hints: [
+          "GROUP BY groups rows that have the same values in specified columns",
+          "SUM(column) calculates the total, AVG(column) calculates the average",
+          "COUNT(*) counts the number of rows in each group",
+          "ORDER BY the aggregated column to rank categories"
+        ],
+        solutionWalkthrough: "Run: SELECT category, SUM(amount) AS total_revenue, AVG(amount) AS avg_transaction, COUNT(*) AS tx_count FROM payments GROUP BY category ORDER BY total_revenue DESC;",
+        realWorldUseCase: "Revenue reporting is the most critical financial query in any organization. GROUP BY aggregations power every dashboard from Stripe to Salesforce to custom ERP systems.",
+        commonMistakes: "Forgetting GROUP BY when using aggregate functions. Including non-aggregated columns in SELECT without adding them to GROUP BY. Confusing COUNT(*) with COUNT(column) (COUNT ignores NULLs).",
+        debuggingTips: "Run 'SELECT category, amount FROM payments LIMIT 10' first to inspect the raw data, then add GROUP BY."
+      },
+      {
+        id: "m3_7",
+        levelNum: 3,
+        title: "The High-Value Customers",
+        subtitle: "HAVING, aggregate filtering with incident",
+        category: "SQL",
+        xpReward: 100,
+        story: "HIGH: The marketing team wants to run a targeted campaign for customers who have spent more than $10,000 in total. However, they also want to exclude any customer with fewer than 3 transactions (likely test accounts). You need to filter aggregated results.",
+        objective: "Write a SQL query using HAVING to filter grouped results by total spending and transaction count.",
+        taskDescription: "Execute 'SELECT customer_id, SUM(amount) AS total_spent, COUNT(*) AS tx_count FROM orders GROUP BY customer_id HAVING SUM(amount) > 10000 AND COUNT(*) >= 3 ORDER BY total_spent DESC;' to find high-value customers.",
+        validationRules: [{ type: "command_contains", params: { substrings: ["HAVING", "GROUP BY"] } }],
+        hints: [
+          "HAVING filters groups after aggregation (WHERE filters rows before)",
+          "You can reference aggregated columns in HAVING but not aliases in some databases",
+          "Use AND to combine multiple HAVING conditions"
+        ],
+        solutionWalkthrough: "Run: SELECT customer_id, SUM(amount) AS total_spent, COUNT(*) AS tx_count FROM orders GROUP BY customer_id HAVING SUM(amount) > 10000 AND COUNT(*) >= 3 ORDER BY total_spent DESC;",
+        realWorldUseCase: "Customer segmentation, fraud detection, and cohort analysis all use HAVING to filter aggregated data. Marketing platforms use this to identify VIP customers and suspicious accounts.",
+        commonMistakes: "Using WHERE instead of HAVING for aggregate conditions. Referencing column aliases in HAVING (some databases don't support it). Not including non-aggregated columns in GROUP BY.",
+        debuggingTips: "First run the query without HAVING to see all aggregated results, then add HAVING to filter."
       }
     ]
   },
@@ -1302,6 +1429,48 @@ export const curriculum: Level[] = [
           description: "Half the application servers are being removed from the load balancer pool because the health check endpoint returns 503 errors due to a shared cache issue.",
           severity: "CRITICAL"
         }
+      },
+      {
+        id: "m5_6",
+        levelNum: 5,
+        title: "The Broken Pipeline",
+        subtitle: "INNER JOIN, LEFT JOIN with incident",
+        category: "SQL",
+        xpReward: 100,
+        story: "CRITICAL: The order processing pipeline is failing because a foreign key constraint is being violated. Orders reference products that don't exist in the products table. You need to join the orders and products tables to find orphaned orders and identify which product IDs are missing.",
+        objective: "Write SQL queries using INNER JOIN and LEFT JOIN to find orders with valid products and orders with missing products.",
+        taskDescription: "Execute 'SELECT o.* FROM orders o LEFT JOIN products p ON o.product_id = p.id WHERE p.id IS NULL;' to find orders referencing non-existent products.",
+        validationRules: [{ type: "command_contains", params: { substrings: ["JOIN", "LEFT JOIN"] } }],
+        hints: [
+          "LEFT JOIN keeps all rows from the left table even if there's no match",
+          "WHERE p.id IS NULL finds rows with no match in the right table",
+          "INNER JOIN only returns rows that match in both tables"
+        ],
+        solutionWalkthrough: "Run: SELECT o.id, o.product_id, o.quantity FROM orders o LEFT JOIN products p ON o.product_id = p.id WHERE p.id IS NULL; This finds orphaned orders referencing missing products.",
+        realWorldUseCase: "Data integrity checks between related tables are critical after ETL failures, partial imports, or replication lag. JOIN queries are the standard tool for finding referential integrity violations.",
+        commonMistakes: "Confusing LEFT JOIN with RIGHT JOIN. Forgetting the ON clause. Using WHERE conditions that turn a LEFT JOIN into an INNER JOIN (filtering on the right table's columns).",
+        debuggingTips: "First run 'SELECT DISTINCT product_id FROM orders' to see all product IDs in orders, then compare with 'SELECT id FROM products'."
+      },
+      {
+        id: "m5_7",
+        levelNum: 5,
+        title: "The Orphan Records",
+        subtitle: "JOIN + NULL detection with incident",
+        category: "SQL",
+        xpReward: 100,
+        story: "HIGH: A system migration left thousands of 'orphan' records in the user_sessions table — sessions that don't have a corresponding user in the users table. These orphan records are bloating the database and causing slow queries. You need to identify and count them.",
+        objective: "Write SQL queries using JOIN techniques with NULL detection to find, count, and analyze orphaned session records.",
+        taskDescription: "Execute 'SELECT s.id, s.session_token, s.created_at FROM user_sessions s LEFT JOIN users u ON s.user_id = u.id WHERE u.id IS NULL;' to find sessions without valid users.",
+        validationRules: [{ type: "command_contains", params: { substrings: ["JOIN", "NULL"] } }],
+        hints: [
+          "Use LEFT JOIN to keep all sessions, then filter where the user doesn't exist",
+          "NULL comparison uses IS NULL, not = NULL",
+          "COUNT(*) with the same join pattern gives you the total orphan count"
+        ],
+        solutionWalkthrough: "Run: SELECT COUNT(*) AS orphan_count FROM user_sessions s LEFT JOIN users u ON s.user_id = u.id WHERE u.id IS NULL; To see details: SELECT s.* FROM user_sessions s LEFT JOIN users u ON s.user_id = u.id WHERE u.id IS NULL;",
+        realWorldUseCase: "Orphaned records are a common byproduct of cascading deletes, partial migrations, and application bugs. Regular orphan detection queries are essential for database health and performance.",
+        commonMistakes: "Using WHERE u.id = NULL instead of WHERE u.id IS NULL. Forgetting that NULL != NULL in SQL. Using INNER JOIN which would exclude the orphans entirely.",
+        debuggingTips: "Run 'SELECT COUNT(*) FROM user_sessions' for total sessions and 'SELECT COUNT(DISTINCT user_id) FROM user_sessions' to see how many have user IDs."
       }
     ]
   },
@@ -1440,6 +1609,48 @@ export const curriculum: Level[] = [
           description: "A critical data export job keeps getting killed by the OOM killer, losing hours of processing. The export needs graceful shutdown and checkpoint-based resumption.",
           severity: "MEDIUM"
         }
+      },
+      {
+        id: "m6_5",
+        levelNum: 6,
+        title: "The Query Within",
+        subtitle: "Subqueries with incident",
+        category: "SQL",
+        xpReward: 100,
+        story: "CRITICAL: The security team needs to find all users who made purchases AFTER their account was flagged for suspicious activity. This requires a subquery: find users whose last purchase timestamp is greater than their account flag timestamp.",
+        objective: "Write a SQL query with a subquery in the WHERE clause to find users matching a condition based on aggregated data.",
+        taskDescription: "Execute 'SELECT * FROM users WHERE id IN (SELECT user_id FROM orders WHERE amount > (SELECT AVG(amount) * 2 FROM orders));' to find users with abnormally large orders.",
+        validationRules: [{ type: "command_contains", params: { substrings: ["SELECT", "IN", "SELECT"] } }],
+        hints: [
+          "A subquery is a SELECT statement nested inside another query",
+          "Use IN with a subquery to filter based on a list of values",
+          "Subqueries can return single values (scalar) or lists"
+        ],
+        solutionWalkthrough: "Run: SELECT id, email, name FROM users WHERE id IN (SELECT user_id FROM orders WHERE amount > (SELECT AVG(amount) * 3 FROM orders)); This finds users with orders over 3x the average.",
+        realWorldUseCase: "Subqueries are essential for multi-step analysis: finding outliers, comparing against averages, and identifying anomalies. Fraud detection systems rely heavily on correlated and nested subqueries.",
+        commonMistakes: "Returning multiple columns from a subquery used with IN. Poor performance with large datasets (consider JOIN or CTE alternatives). Forgetting that subqueries in WHERE execute per row.",
+        debuggingTips: "Run the inner subquery separately first: 'SELECT AVG(amount) * 2 FROM orders' to verify the threshold value."
+      },
+      {
+        id: "m6_6",
+        levelNum: 6,
+        title: "The CTE Blueprint",
+        subtitle: "CTEs, WITH with incident",
+        category: "SQL",
+        xpReward: 100,
+        story: "MEDIUM: The analytics team needs a complex report showing monthly revenue growth. They need a query that's readable and maintainable, not a tangled mess of nested subqueries. You need to use Common Table Expressions (CTEs) with the WITH clause to build a clean, modular query.",
+        objective: "Write a SQL query using WITH (CTE) to define temporary result sets and build a multi-step analysis pipeline.",
+        taskDescription: "Execute a CTE-based query: 'WITH monthly_totals AS (SELECT DATE_TRUNC('month', created_at) AS month, COUNT(*) AS orders, SUM(amount) AS revenue FROM orders GROUP BY DATE_TRUNC('month', created_at)) SELECT month, orders, revenue FROM monthly_totals ORDER BY month;'",
+        validationRules: [{ type: "command_contains", params: { substrings: ["WITH", "AS"] } }],
+        hints: [
+          "WITH defines a named CTE that acts like a temporary view",
+          "You can define multiple CTEs separated by commas",
+          "CTEs make complex queries readable and reusable"
+        ],
+        solutionWalkthrough: "Run: WITH monthly_totals AS (SELECT DATE_TRUNC('month', created_at) AS month, COUNT(*) AS orders, SUM(amount) AS revenue FROM orders GROUP BY DATE_TRUNC('month', created_at)) SELECT month, orders, revenue FROM monthly_totals ORDER BY month;",
+        realWorldUseCase: "CTEs are the standard way to write production-grade analytical queries. They're used in every BI tool, Looker dashboard, and data warehouse pipeline for readability and performance.",
+        commonMistakes: "Forgetting the comma between multiple CTEs. Not referencing the CTE in the main query (unused CTE). Using CTEs when simple subqueries would be more performant.",
+        debuggingTips: "Build the CTE incrementally: define one CTE and SELECT from it to verify, then add the next. Each CTE can be tested independently."
       }
     ]
   },
@@ -1630,6 +1841,50 @@ export const curriculum: Level[] = [
         realWorldUseCase: "Production KQL queries in Sentinel and Azure Workbooks always use 'let' for maintainability — defining thresholds at the top makes quarterly reviews trivial and prevents magic number bugs.",
         commonMistakes: "Forgetting the semicolon after let statements. Trying to reference a let variable before it's defined (order matters). Mixing up = and == in let assignments.",
         debuggingTips: "Debug each let statement in isolation first. Run 'let X = SigninLogs | take 5; X' to verify a view works before chaining it into the next step."
+      },
+      {
+        id: "m8_7",
+        levelNum: 7,
+        title: "The Ranking Problem",
+        subtitle: "Window functions (ROW_NUMBER, RANK) with incident",
+        category: "SQL",
+        xpReward: 100,
+        story: "MEDIUM: The sales team wants to rank sales representatives by their quarterly performance. However, there are ties — two reps have identical totals. ROW_NUMBER would arbitrarily break the tie, but RANK should give them the same rank. You need to implement both to show the difference.",
+        objective: "Write SQL queries using ROW_NUMBER() and RANK() window functions to rank sales reps by total sales.",
+        taskDescription: "Execute 'SELECT name, total_sales, ROW_NUMBER() OVER (ORDER BY total_sales DESC) AS row_num, RANK() OVER (ORDER BY total_sales DESC) AS rank FROM sales_reps;' to compare ranking methods.",
+        validationRules: [{ type: "command_contains", params: { substrings: ["ROW_NUMBER", "RANK", "OVER"] } }],
+        hints: [
+          "Window functions use OVER() to define the window frame",
+          "ROW_NUMBER() gives each row a unique number, even with ties",
+          "RANK() gives tied rows the same rank, skipping the next number",
+          "ORDER BY inside OVER() controls the ranking order"
+        ],
+        solutionWalkthrough: "Run: SELECT id, name, total_sales, ROW_NUMBER() OVER (ORDER BY total_sales DESC) AS row_rank, RANK() OVER (ORDER BY total_sales DESC) AS rank, DENSE_RANK() OVER (ORDER BY total_sales DESC) AS dense_rank FROM sales_reps;",
+        realWorldUseCase: "Window functions power leaderboards, paginated reports, and time-series analysis. Every major analytics platform uses them for cohort analysis, customer ranking, and performance dashboards.",
+        commonMistakes: "Forgetting the OVER() clause. Mixing up ROW_NUMBER, RANK, and DENSE_RANK behaviors. Using ORDER BY in the outer query that conflicts with the window ordering.",
+        debuggingTips: "Test with a small dataset where you know the expected ranking. Use SELECT * to see all columns and verify the ranking logic."
+      },
+      {
+        id: "m8_8",
+        levelNum: 7,
+        title: "The Moving Target",
+        subtitle: "LAG, LEAD, running totals with incident",
+        category: "SQL",
+        xpReward: 100,
+        story: "HIGH: The CFO needs to understand the month-over-month revenue change. Was this month better or worse than last month? By how much? You need to use LAG to compare each month's revenue with the previous month and calculate the difference.",
+        objective: "Write SQL queries using LAG() and LEAD() window functions to calculate period-over-period changes and running totals.",
+        taskDescription: "Execute 'SELECT month, revenue, LAG(revenue) OVER (ORDER BY month) AS prev_month, revenue - LAG(revenue) OVER (ORDER BY month) AS change FROM monthly_revenue;' to show month-over-month revenue changes.",
+        validationRules: [{ type: "command_contains", params: { substrings: ["LAG", "OVER", "ORDER BY"] } }],
+        hints: [
+          "LAG(column) accesses data from the previous row in the window",
+          "LEAD(column) accesses data from the next row",
+          "ORDER BY inside OVER() defines the order of rows for LAG/LEAD",
+          "SUM(column) OVER (ORDER BY date) creates a running total"
+        ],
+        solutionWalkthrough: "Run: SELECT month, revenue, LAG(revenue, 1) OVER (ORDER BY month) AS prev_month_revenue, COALESCE(revenue - LAG(revenue) OVER (ORDER BY month), 0) AS month_change, SUM(revenue) OVER (ORDER BY month) AS running_total FROM monthly_revenue ORDER BY month;",
+        realWorldUseCase: "Period-over-period analysis is fundamental to financial reporting, growth metrics, and operational monitoring. LAG/LEAD are used in every CFO dashboard, SaaS metrics report, and KPI tracking system.",
+        commonMistakes: "Forgetting ORDER BY in the OVER clause (LAG without order is meaningless). Not handling NULL for the first row (no previous row exists). Using LAG without specifying the offset parameter.",
+        debuggingTips: "First create a simple monthly view without LAG to verify the base data, then add LAG one step at a time."
       }
     ]
   },
@@ -1770,6 +2025,50 @@ export const curriculum: Level[] = [
           description: "A 10x traffic spike caused the payment service to crash. All 3 Kubernetes replicas are unhealthy and returning HTTP 502 errors to customers.",
           severity: "CRITICAL"
         }
+      },
+      {
+        id: "m8_11",
+        levelNum: 8,
+        title: "The Atomic Deployment",
+        subtitle: "Transactions with incident",
+        category: "SQL",
+        xpReward: 100,
+        story: "CRITICAL: A deployment script is running multiple SQL statements to update pricing across the entire product catalog. If the script fails halfway through, some products will have new prices while others have old prices — causing checkout chaos. You need to wrap the updates in a transaction with ROLLBACK on failure.",
+        objective: "Write a SQL transaction using BEGIN, COMMIT, and ROLLBACK to ensure atomic updates across multiple tables.",
+        taskDescription: "Execute a transaction: 'BEGIN; UPDATE products SET price = price * 1.1 WHERE category = 'Electronics'; UPDATE products SET price = price * 1.05 WHERE category = 'Books'; COMMIT;' with error handling via ROLLBACK.",
+        validationRules: [{ type: "command_contains", params: { substrings: ["BEGIN", "COMMIT", "ROLLBACK"] } }],
+        hints: [
+          "BEGIN starts a transaction block",
+          "COMMIT saves all changes made in the transaction",
+          "ROLLBACK undoes all changes if something goes wrong",
+          "Transactions ensure all-or-nothing execution"
+        ],
+        solutionWalkthrough: "Run: BEGIN; UPDATE products SET price = price * 1.1 WHERE category = 'Electronics'; UPDATE products SET price = price * 1.05 WHERE category = 'Books'; COMMIT; If any statement fails, run ROLLBACK to undo everything.",
+        realWorldUseCase: "Transactions are critical for any multi-step database operation: payments (debit one account, credit another), inventory (reserve stock, create order), and deployments (update schema, migrate data).",
+        commonMistakes: "Forgetting COMMIT (leaves the transaction open, causing locks). Not having a ROLLBACK plan. Using auto-commit mode which treats each statement as its own transaction.",
+        debuggingTips: "Run SELECT before and after the transaction to verify changes. Use BEGIN; ... ROLLBACK; to test without making permanent changes."
+      },
+      {
+        id: "m8_12",
+        levelNum: 8,
+        title: "The Slow Query Crisis",
+        subtitle: "EXPLAIN, CREATE INDEX with incident",
+        category: "SQL",
+        xpReward: 100,
+        story: "CRITICAL: The customer dashboard query takes 45 seconds to load. Users are abandoning the page and the CEO is furious. You need to diagnose why the query is slow using EXPLAIN, identify missing indexes, and create the necessary indexes to fix performance.",
+        objective: "Write SQL queries using EXPLAIN to analyze query execution plans and CREATE INDEX to add missing indexes.",
+        taskDescription: "Execute 'EXPLAIN SELECT * FROM orders WHERE customer_id = 1234;' to see the query plan, then 'CREATE INDEX idx_orders_customer ON orders(customer_id);' to add an index.",
+        validationRules: [{ type: "command_contains", params: { substrings: ["EXPLAIN", "CREATE INDEX"] } }],
+        hints: [
+          "EXPLAIN shows the query execution plan including full table scans vs index scans",
+          "CREATE INDEX adds an index on specified columns",
+          "Indexes dramatically speed up WHERE, JOIN, and ORDER BY operations",
+          "Use EXPLAIN ANALYZE to get actual execution timing"
+        ],
+        solutionWalkthrough: "Run: EXPLAIN SELECT * FROM orders WHERE customer_id = 1234; Look for 'Seq Scan' (sequential/full table scan) vs 'Index Scan'. Then: CREATE INDEX idx_orders_customer_id ON orders(customer_id); Run EXPLAIN again to verify the improvement.",
+        realWorldUseCase: "Slow query diagnosis is a daily task for every backend and database engineer. EXPLAIN and CREATE INDEX are the primary tools for performance tuning in production databases.",
+        commonMistakes: "Creating too many indexes (slows down writes). Not using EXPLAIN before adding indexes. Creating indexes on low-cardinality columns (e.g., boolean flags).",
+        debuggingTips: "Check existing indexes with '\\di' in psql or 'SHOW INDEX FROM table_name' in MySQL. Use EXPLAIN ANALYZE for real execution times, not just estimates."
       }
     ]
   },
@@ -1949,6 +2248,50 @@ export const curriculum: Level[] = [
           description: "A developer is leaving under contentious circumstances. Security needs to audit their recent activity for data exfiltration: large file transfers, unusual SSH connections, and sensitive database access.",
           severity: "HIGH"
         }
+      },
+      {
+        id: "m9_6",
+        levelNum: 9,
+        title: "The Data Breach Audit",
+        subtitle: "UNION, INTERSECT, EXCEPT with incident",
+        category: "SQL",
+        xpReward: 100,
+        story: "CRITICAL: A data breach is suspected. The security team has two lists: IP addresses that accessed the admin panel, and IP addresses from the VPN logs. You need to find: all unique IPs across both logs (UNION), IPs that appear in both logs (INTERSECT), and IPs that accessed admin but weren't on the VPN (EXCEPT).",
+        objective: "Write SQL queries using UNION, INTERSECT, and EXCEPT set operations to cross-reference access logs.",
+        taskDescription: "Execute 'SELECT ip FROM admin_access EXCEPT SELECT ip FROM vpn_logs;' to find IPs that accessed admin without VPN.",
+        validationRules: [{ type: "command_contains", params: { substrings: ["UNION", "INTERSECT", "EXCEPT"] } }],
+        hints: [
+          "UNION combines results from two queries, removing duplicates",
+          "INTERSECT returns rows common to both queries",
+          "EXCEPT returns rows from the first query that are NOT in the second",
+          "All queries must have the same number of columns with compatible types"
+        ],
+        solutionWalkthrough: "Run: -- All unique IPs: SELECT ip FROM admin_access UNION SELECT ip FROM vpn_logs; -- IPs in both: SELECT ip FROM admin_access INTERSECT SELECT ip FROM vpn_logs; -- Suspicious IPs (admin no VPN): SELECT ip FROM admin_access EXCEPT SELECT ip FROM vpn_logs;",
+        realWorldUseCase: "Set operations are fundamental to breach investigations, access audits, and compliance reporting. They're used to compare access logs, find gaps in coverage, and identify unauthorized access patterns.",
+        commonMistakes: "Using UNION ALL (includes duplicates) when UNION (deduplicated) is needed. Column count mismatch between queries. Using ORDER BY in individual queries (ORDER BY goes at the end).",
+        debuggingTips: "Test each SELECT individually before combining with set operations. Use COUNT(*) on each subquery to understand the data volumes."
+      },
+      {
+        id: "m9_7",
+        levelNum: 9,
+        title: "The Privilege Escalation",
+        subtitle: "Complex multi-table investigation with incident",
+        category: "SQL",
+        xpReward: 100,
+        story: "CRITICAL: SOC detected a privilege escalation attack. A user with low-level 'viewer' role somehow gained admin access and exfiltrated customer data. You need to investigate by joining the users, roles, permissions, audit_log, and access_history tables to trace the attack path and identify all compromised accounts.",
+        objective: "Write a multi-table JOIN query that correlates user accounts, role assignments, permission changes, and access logs to trace a privilege escalation incident.",
+        taskDescription: "Execute a complex investigation query: 'SELECT u.email, r.role_name, a.action, a.timestamp, a.details FROM audit_log a JOIN users u ON a.user_id = u.id JOIN roles r ON u.role_id = r.id WHERE a.action IN ('ROLE_CHANGE', 'PERMISSION_GRANT', 'DATA_EXPORT') AND a.timestamp > NOW() - INTERVAL '7 days' ORDER BY a.timestamp;'",
+        validationRules: [{ type: "command_contains", params: { substrings: ["JOIN", "audit", "WHERE"] } }],
+        hints: [
+          "Chain multiple JOINs to connect related tables",
+          "Filter by action types relevant to privilege escalation",
+          "Use time ranges to focus on the incident window",
+          "ORDER BY timestamp to reconstruct the attack timeline"
+        ],
+        solutionWalkthrough: "Run: SELECT u.email, u.role_id AS current_role, r.role_name, al.action, al.timestamp, al.details FROM users u JOIN audit_log al ON u.id = al.user_id JOIN roles r ON u.role_id = r.id WHERE al.action IN ('ROLE_CHANGE', 'PERMISSION_GRANT', 'DATA_ACCESS') AND al.timestamp >= NOW() - INTERVAL '24 hours' ORDER BY al.timestamp;",
+        realWorldUseCase: "Incident response investigations require correlating data across multiple tables — user accounts, access logs, permission changes, and network logs. Multi-table JOINs are the foundation of forensic database analysis.",
+        commonMistakes: "Creating Cartesian products by forgetting JOIN conditions. Using INNER JOIN when LEFT JOIN is needed to preserve all audit records. Not filtering by time range, causing massive result sets.",
+        debuggingTips: "Start with a simple join between two tables and verify the row count, then add additional tables one at a time. Use LIMIT 100 to keep result sets manageable during investigation."
       }
     ]
   }

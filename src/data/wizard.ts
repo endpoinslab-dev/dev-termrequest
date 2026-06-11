@@ -18,7 +18,7 @@ export interface WizardModule {
 }
 
 export interface WizardTrack {
-  id: "linux" | "powershell" | "kql" | "vim";
+  id: "linux" | "powershell" | "kql" | "vim" | "sql";
   title: string;
   description: string;
   modules: WizardModule[];
@@ -2757,6 +2757,462 @@ export const wizardTracks: WizardTrack[] = [
               { flag: ":set ic", description: "Ignore case in searches" },
               { flag: ":set list", description: "Show invisible characters" },
               { flag: ":set all", description: "Show ALL current option values" }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    id: "sql",
+    title: "SQL Query Wizard",
+    description: "Master SQL — from basic SELECTs to advanced window functions and query optimization. Real product-level queries included.",
+    modules: [
+      {
+        id: "sql-basics",
+        title: "SELECT & Filtering",
+        description: "Retrieve data from tables and filter rows with precise conditions.",
+        commands: [
+          {
+            command: "SELECT WHERE",
+            description: "The foundation of SQL — select columns from a table and filter rows using conditions.",
+            syntax: "SELECT column1, column2 FROM table WHERE condition;",
+            syntaxParts: [
+              { label: "keyword", value: "SELECT", color: "text-cyber-primary" },
+              { label: "cols", value: "column1, column2", color: "text-cyber-purple" },
+              { label: "keyword", value: "FROM", color: "text-cyber-primary" },
+              { label: "table", value: "table", color: "text-cyber-warning" },
+              { label: "keyword", value: "WHERE", color: "text-cyber-primary" },
+              { label: "cond", value: "condition;", color: "text-cyber-accent" }
+            ],
+            example: "SELECT name, email, created_at\nFROM users\nWHERE status = 'active';\n\n name   |  email              | created_at\n--------+---------------------+-----------------\n Alice  | alice@example.com   | 2025-01-15 08:30\n Bob    | bob@example.com     | 2025-02-20 14:00",
+            stepByStep: [
+              "SELECT specifies which columns to return (use * for all columns)",
+              "FROM specifies the table to query",
+              "WHERE filters rows — only rows where condition is TRUE are returned",
+              "Use single quotes for string literals: WHERE name = 'Alice'",
+              "Use AND, OR, NOT to combine conditions: WHERE status = 'active' AND age > 18",
+              "Always end SQL statements with a semicolon (;)"
+            ],
+            tryIt: "SELECT * FROM users WHERE status = 'active';",
+            commonFlags: [
+              { flag: "SELECT *", description: "Select ALL columns from the table" },
+              { flag: "WHERE col = val", description: "Filter by equality" },
+              { flag: "WHERE col != val", description: "Filter by inequality" },
+              { flag: "AND / OR", description: "Combine multiple conditions" },
+              { flag: "NOT", description: "Negate a condition" }
+            ]
+          },
+          {
+            command: "IN BETWEEN LIKE",
+            description: "Powerful WHERE operators — match sets, ranges, and patterns.",
+            syntax: "WHERE column IN (value1, value2) / column BETWEEN a AND b / column LIKE pattern",
+            syntaxParts: [
+              { label: "keyword", value: "WHERE", color: "text-cyber-primary" },
+              { label: "col", value: "column", color: "text-cyber-purple" },
+              { label: "op", value: "IN / BETWEEN / LIKE", color: "text-cyber-warning" }
+            ],
+            example: "-- IN: match any value in a list\nSELECT * FROM orders WHERE status IN ('shipped', 'processing');\n\n-- BETWEEN: range check (inclusive)\nSELECT * FROM products WHERE price BETWEEN 10 AND 50;\n\n-- LIKE: pattern matching (% = any chars, _ = single char)\nSELECT * FROM users WHERE email LIKE '%@example.com';\nSELECT * FROM employees WHERE name LIKE 'J_hn';",
+            stepByStep: [
+              "IN (val1, val2, ...) is shorthand for multiple OR conditions",
+              "BETWEEN a AND b is inclusive — includes both a and b",
+              "LIKE '%pattern%' — % matches ANY sequence of characters",
+              "LIKE '_pattern' — _ matches exactly ONE character",
+              "ILIKE (PostgreSQL) is case-insensitive LIKE",
+              "Use NOT IN, NOT BETWEEN, NOT LIKE to invert"
+            ],
+            tryIt: "SELECT * FROM products WHERE category IN ('Electronics', 'Software') AND price BETWEEN 5 AND 100;",
+            commonFlags: [
+              { flag: "IN (...)", description: "Match any value in a list" },
+              { flag: "BETWEEN a AND b", description: "Match values in a range (inclusive)" },
+              { flag: "LIKE pattern", description: "Pattern match with % and _ wildcards" },
+              { flag: "IS NULL", description: "Check for NULL values" },
+              { flag: "IS NOT NULL", description: "Check for non-NULL values" }
+            ]
+          },
+          {
+            command: "DISTINCT LIMIT OFFSET",
+            description: "Remove duplicates and control how many rows are returned.",
+            syntax: "SELECT DISTINCT column / LIMIT n / OFFSET n",
+            syntaxParts: [
+              { label: "keyword", value: "SELECT DISTINCT", color: "text-cyber-primary" },
+              { label: "col", value: "column", color: "text-cyber-purple" },
+              { label: "keyword", value: "LIMIT", color: "text-cyber-warning" },
+              { label: "num", value: "n", color: "text-cyber-accent" }
+            ],
+            example: "-- Find all unique customer cities\nSELECT DISTINCT city FROM customers;\n\n-- Pagination: page 2 with 10 results per page\nSELECT * FROM orders\nORDER BY created_at DESC\nLIMIT 10 OFFSET 10;\n\n-- Top 5 most expensive products\nSELECT name, price FROM products\nORDER BY price DESC\nLIMIT 5;",
+            stepByStep: [
+              "SELECT DISTINCT col — returns only unique values (removes duplicates)",
+              "LIMIT n — limits result to at most n rows",
+              "OFFSET n — skips the first n rows before returning results",
+              "Use LIMIT + OFFSET for pagination: page = OFFSET/LIMIT + 1",
+              "DISTINCT applies to ALL selected columns together"
+            ],
+            tryIt: "SELECT DISTINCT category FROM products ORDER BY category LIMIT 5;",
+            commonFlags: [
+              { flag: "DISTINCT", description: "Remove duplicate rows from results" },
+              { flag: "LIMIT n", description: "Return at most n rows" },
+              { flag: "OFFSET n", description: "Skip n rows before returning results" },
+              { flag: "FETCH FIRST n ROWS ONLY", description: "SQL standard equivalent of LIMIT" }
+            ]
+          }
+        ]
+      },
+      {
+        id: "sql-joins",
+        title: "Joins",
+        description: "Combine data from multiple tables — the heart of relational databases.",
+        commands: [
+          {
+            command: "INNER JOIN",
+            description: "Return only rows that have matching values in both tables.",
+            syntax: "SELECT columns FROM table1 INNER JOIN table2 ON table1.col = table2.col;",
+            syntaxParts: [
+              { label: "keyword", value: "SELECT", color: "text-cyber-primary" },
+              { label: "cols", value: "columns", color: "text-cyber-purple" },
+              { label: "keyword", value: "FROM table1 INNER JOIN table2", color: "text-cyber-warning" },
+              { label: "keyword", value: "ON", color: "text-cyber-primary" },
+              { label: "cond", value: "table1.col = table2.col", color: "text-cyber-accent" }
+            ],
+            example: "SELECT o.id, o.total, c.name, c.email\nFROM orders o\nINNER JOIN customers c ON o.customer_id = c.id\nWHERE o.total > 100;\n\n id  | total | name  | email\n-----+-------+-------+-----------------\n 101 | 250   | Alice | alice@example.com\n 105 | 180   | Bob   | bob@example.com",
+            stepByStep: [
+              "INNER JOIN returns only matching rows from BOTH tables",
+              "ON specifies the join condition (usually foreign key = primary key)",
+              "Table aliases (o, c) make queries readable: FROM orders o",
+              "Rows in either table without a match are EXCLUDED",
+              "You can join 3+ tables: FROM a JOIN b ON ... JOIN c ON ..."
+            ],
+            tryIt: "SELECT u.name, o.total FROM users u INNER JOIN orders o ON u.id = o.user_id WHERE o.total > 50;",
+            commonFlags: [
+              { flag: "INNER JOIN", description: "Return only matching rows from both tables" },
+              { flag: "ON condition", description: "Specify the join condition" },
+              { flag: "USING (col)", description: "Shorthand when join columns have the same name" },
+              { flag: "table alias", description: "Short names (FROM orders o) for readability" }
+            ]
+          },
+          {
+            command: "LEFT RIGHT FULL JOIN",
+            description: "Outer joins — preserve rows from one or both tables even without matches.",
+            syntax: "SELECT cols FROM table1 LEFT/RIGHT/FULL JOIN table2 ON condition;",
+            syntaxParts: [
+              { label: "keyword", value: "SELECT cols FROM table1", color: "text-cyber-purple" },
+              { label: "join", value: "LEFT | RIGHT | FULL JOIN", color: "text-cyber-primary" },
+              { label: "keyword", value: "table2 ON condition", color: "text-cyber-warning" }
+            ],
+            example: "-- LEFT JOIN: ALL customers, even those without orders\nSELECT c.name, COUNT(o.id) AS order_count\nFROM customers c\nLEFT JOIN orders o ON c.id = o.customer_id\nGROUP BY c.name;\n\n name  | order_count\n-------+-------------\n Alice | 3\n Bob   | 0          -- Bob has no orders but still appears\n Carol | 1",
+            stepByStep: [
+              "LEFT JOIN keeps ALL rows from the LEFT table, fills NULL for missing matches",
+              "RIGHT JOIN keeps ALL rows from the RIGHT table (less common — swap tables instead)",
+              "FULL JOIN keeps ALL rows from BOTH tables, NULLs where no match",
+              "Use LEFT JOIN to find orphans: WHERE right_table.id IS NULL",
+              "CROSS JOIN creates a Cartesian product (every row × every row)"
+            ],
+            tryIt: "SELECT u.name, p.title FROM users u LEFT JOIN posts p ON u.id = p.author_id;",
+            commonFlags: [
+              { flag: "LEFT JOIN", description: "All rows from left table, NULLs where right has no match" },
+              { flag: "RIGHT JOIN", description: "All rows from right table, NULLs where left has no match" },
+              { flag: "FULL JOIN", description: "All rows from both tables, NULLs where no match" },
+              { flag: "CROSS JOIN", description: "Cartesian product (every combination)" },
+              { flag: "NATURAL JOIN", description: "Join on all columns with the same name (use with care)" }
+            ]
+          },
+          {
+            command: "self-join",
+            description: "Join a table to itself — essential for hierarchies, comparisons, and adjacency lists.",
+            syntax: "SELECT a.col, b.col FROM table a INNER JOIN table b ON a.ref = b.id;",
+            syntaxParts: [
+              { label: "keyword", value: "SELECT", color: "text-cyber-primary" },
+              { label: "alias", value: "a.col, b.col", color: "text-cyber-purple" },
+              { label: "keyword", value: "FROM table a", color: "text-cyber-warning" },
+              { label: "keyword", value: "JOIN table b", color: "text-cyber-primary" },
+              { label: "keyword", value: "ON", color: "text-cyber-accent" },
+              { label: "cond", value: "a.ref = b.id", color: "text-cyber-purple" }
+            ],
+            example: "-- Employee hierarchy: find each employee's manager\nSELECT e.name AS employee, m.name AS manager\nFROM employees e\nLEFT JOIN employees m ON e.manager_id = m.id;\n\n employee | manager\n----------+---------\n Alice    | NULL     -- Alice is the CEO (no manager)\n Bob      | Alice\n Charlie  | Bob\n\n-- Find product duplicates (same name, different IDs)\nSELECT a.id, b.id, a.name\nFROM products a\nINNER JOIN products b ON a.name = b.name AND a.id < b.id;",
+            stepByStep: [
+              "A self-join uses two ALIASES for the same table (a and b)",
+              "Use LEFT JOIN to include root nodes (e.g., CEO with no manager)",
+              "Common uses: org charts, category trees, threaded comments, finding duplicates",
+              "Always use table aliases to avoid ambiguity"
+            ],
+            tryIt: "SELECT e.name AS emp, m.name AS mgr FROM employees e LEFT JOIN employees m ON e.manager_id = m.id;",
+            commonFlags: [
+              { flag: "table a, table b", description: "Two aliases for the same table" },
+              { flag: "a.id < b.id", description: "Avoid duplicate pairs in self-joins" },
+              { flag: "LEFT JOIN", description: "Include root/parent entries with no reference" }
+            ]
+          }
+        ]
+      },
+      {
+        id: "sql-aggregation",
+        title: "Aggregation & Grouping",
+        description: "Summarize data with aggregate functions and group results.",
+        commands: [
+          {
+            command: "GROUP BY HAVING",
+            description: "Group rows and apply aggregate functions to each group.",
+            syntax: "SELECT col, AGGREGATE(col) FROM table GROUP BY col HAVING condition;",
+            syntaxParts: [
+              { label: "keyword", value: "SELECT col,", color: "text-cyber-purple" },
+              { label: "agg", value: "COUNT(col)", color: "text-cyber-primary" },
+              { label: "keyword", value: "FROM table", color: "text-cyber-warning" },
+              { label: "keyword", value: "GROUP BY col", color: "text-cyber-primary" },
+              { label: "keyword", value: "HAVING condition", color: "text-cyber-accent" }
+            ],
+            example: "-- Revenue by product category (only categories with > $1000)\nSELECT p.category,\n       COUNT(p.id) AS products,\n       SUM(p.price * oi.quantity) AS total_revenue,\n       AVG(p.price) AS avg_price\nFROM products p\nJOIN order_items oi ON p.id = oi.product_id\nGROUP BY p.category\nHAVING SUM(p.price * oi.quantity) > 1000\nORDER BY total_revenue DESC;\n\n category   | products | total_revenue | avg_price\n------------+----------+---------------+-----------\n Electronics| 12       | 45200.00      | 245.50\n Clothing   | 25       | 8900.00       | 52.30",
+            stepByStep: [
+              "GROUP BY groups rows that share the same value in the specified column",
+              "Every column in SELECT must either be in GROUP BY or wrapped in an aggregate function",
+              "COUNT(*) counts all rows in each group",
+              "HAVING filters groups AFTER aggregation (WHERE filters rows BEFORE)",
+              "WHERE goes before GROUP BY, HAVING goes after",
+              "ORDER BY goes last"
+            ],
+            tryIt: "SELECT status, COUNT(*) AS count, AVG(total) AS avg_total FROM orders GROUP BY status HAVING COUNT(*) > 5;",
+            commonFlags: [
+              { flag: "GROUP BY col", description: "Group rows by column value" },
+              { flag: "HAVING condition", description: "Filter groups after aggregation" },
+              { flag: "COUNT(*)", description: "Count rows in each group" },
+              { flag: "COUNT(DISTINCT col)", description: "Count unique values in each group" }
+            ]
+          },
+          {
+            command: "SUM AVG MIN MAX",
+            description: "Aggregate functions for numeric calculations across groups or entire tables.",
+            syntax: "SELECT SUM(col), AVG(col), MIN(col), MAX(col) FROM table;",
+            syntaxParts: [
+              { label: "keyword", value: "SELECT", color: "text-cyber-primary" },
+              { label: "func", value: "SUM(col), AVG(col), MIN(col), MAX(col)", color: "text-cyber-warning" },
+              { label: "keyword", value: "FROM table", color: "text-cyber-purple" }
+            ],
+            example: "-- Sales dashboard metrics\nSELECT\n  COUNT(*) AS total_orders,\n  SUM(total) AS revenue,\n  AVG(total) AS avg_order_value,\n  MIN(total) AS smallest_order,\n  MAX(total) AS largest_order\nFROM orders\nWHERE created_at >= '2025-01-01';\n\n total_orders | revenue  | avg_order_value | smallest_order | largest_order\n--------------+----------+-----------------+----------------+---------------\n 1520         | 289450.00| 190.43          | 5.99           | 2500.00",
+            stepByStep: [
+              "SUM(column) — total of all values in the column",
+              "AVG(column) — arithmetic mean of values",
+              "MIN(column) — smallest value in the column",
+              "MAX(column) — largest value in the column",
+              "These ignore NULL values by default",
+              "Combine with GROUP BY for per-category summaries"
+            ],
+            tryIt: "SELECT department, COUNT(*), AVG(salary) AS avg_salary, MAX(salary) AS max_salary FROM employees GROUP BY department;",
+            commonFlags: [
+              { flag: "SUM(col)", description: "Sum of values" },
+              { flag: "AVG(col)", description: "Average of values" },
+              { flag: "MIN(col)", description: "Minimum value" },
+              { flag: "MAX(col)", description: "Maximum value" },
+              { flag: "COUNT(col)", description: "Count of non-NULL values" }
+            ]
+          }
+        ]
+      },
+      {
+        id: "sql-subqueries",
+        title: "Subqueries & CTEs",
+        description: "Nest queries inside queries and use Common Table Expressions for readability.",
+        commands: [
+          {
+            command: "Subqueries",
+            description: "A query inside another query — used in SELECT, FROM, WHERE, and HAVING clauses.",
+            syntax: "SELECT * FROM table WHERE col IN (SELECT col FROM other_table WHERE condition);",
+            syntaxParts: [
+              { label: "outer", value: "SELECT * FROM table", color: "text-cyber-primary" },
+              { label: "keyword", value: "WHERE col IN", color: "text-cyber-warning" },
+              { label: "inner", value: "(SELECT col FROM other_table)", color: "text-cyber-accent" }
+            ],
+            example: "-- Find customers who have never placed an order\nSELECT name, email\nFROM customers\nWHERE id NOT IN (SELECT DISTINCT customer_id FROM orders);\n\n-- Find products priced above the average\nSELECT name, price\nFROM products\nWHERE price > (SELECT AVG(price) FROM products);\n\n-- Correlated subquery: latest order per customer\nSELECT c.name, o.total, o.created_at\nFROM customers c\nJOIN orders o ON o.id = (\n  SELECT id FROM orders\n  WHERE customer_id = c.id\n  ORDER BY created_at DESC\n  LIMIT 1\n);",
+            stepByStep: [
+              "A subquery is a SELECT nested inside another query",
+              "Scalar subquery returns ONE value — use with =, >, <",
+              "Row subquery returns ONE row — use with =, (col1, col2)",
+              "Table subquery returns MANY rows — use with IN, EXISTS, ANY, ALL",
+              "Correlated subquery references the OUTER query — runs once per outer row",
+              "Correlated subqueries can be slow on large tables"
+            ],
+            tryIt: "SELECT * FROM products WHERE price > (SELECT AVG(price) FROM products);",
+            commonFlags: [
+              { flag: "WHERE col IN (subquery)", description: "Filter by subquery result set" },
+              { flag: "WHERE EXISTS (subquery)", description: "Check if subquery returns any rows" },
+              { flag: "WHERE col > ANY/ALL (subquery)", description: "Compare against any or all subquery values" },
+              { flag: "SELECT (subquery)", description: "Use subquery as a computed column" }
+            ]
+          },
+          {
+            command: "CTE WITH",
+            description: "Common Table Expression — name a subquery and reuse it like a temporary table. Essential for readable, maintainable SQL.",
+            syntax: "WITH cte_name AS (SELECT ...) SELECT * FROM cte_name;",
+            syntaxParts: [
+              { label: "keyword", value: "WITH", color: "text-cyber-primary" },
+              { label: "name", value: "cte_name AS (", color: "text-cyber-purple" },
+              { label: "subquery", value: "SELECT ...", color: "text-cyber-accent" },
+              { label: "keyword", value: ") SELECT * FROM cte_name", color: "text-cyber-primary" }
+            ],
+            example: "-- Monthly revenue report using CTEs\nWITH monthly_revenue AS (\n  SELECT\n    DATE_TRUNC('month', created_at) AS month,\n    SUM(total) AS revenue\n  FROM orders\n  GROUP BY DATE_TRUNC('month', created_at)\n),\nprevious_month AS (\n  SELECT\n    month,\n    revenue,\n    LAG(revenue) OVER (ORDER BY month) AS prev_revenue\n  FROM monthly_revenue\n)\nSELECT\n  month,\n  revenue,\n  prev_revenue,\n  ROUND((revenue - prev_revenue) / prev_revenue * 100, 2) AS growth_pct\nFROM previous_month\nORDER BY month DESC;",
+            stepByStep: [
+              "WITH name AS (query) defines a named CTE",
+              "You can reference the CTE name in the main query as if it were a table",
+              "Multiple CTEs are separated by commas: WITH a AS (...), b AS (...)",
+              "CTEs make complex queries readable and testable",
+              "Recursive CTEs use UNION ALL and a termination condition"
+            ],
+            tryIt: "WITH high_value AS (SELECT * FROM orders WHERE total > 500) SELECT customer_id, COUNT(*) FROM high_value GROUP BY customer_id;",
+            commonFlags: [
+              { flag: "WITH name AS (query)", description: "Define a CTE" },
+              { flag: "Multiple CTEs", description: "WITH a AS (...), b AS (...)" },
+              { flag: "Recursive CTE", description: "WITH RECURSIVE cte AS (base UNION ALL recursive_step)" }
+            ]
+          }
+        ]
+      },
+      {
+        id: "sql-window",
+        title: "Window Functions",
+        description: "Perform calculations across sets of rows while preserving individual row details.",
+        commands: [
+          {
+            command: "ROW_NUMBER RANK DENSE_RANK",
+            description: "Number rows within a partition — essential for pagination, dedup, and ranking.",
+            syntax: "ROW_NUMBER() OVER (PARTITION BY col ORDER BY col) / RANK() / DENSE_RANK()",
+            syntaxParts: [
+              { label: "func", value: "ROW_NUMBER()", color: "text-cyber-primary" },
+              { label: "keyword", value: "OVER (", color: "text-cyber-warning" },
+              { label: "keyword", value: "PARTITION BY col", color: "text-cyber-purple" },
+              { label: "keyword", value: "ORDER BY col)", color: "text-cyber-accent" }
+            ],
+            example: "-- Deduplicate: keep only the first occurrence per user\nWITH ranked AS (\n  SELECT *,\n    ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY created_at DESC) AS rn\n  FROM login_sessions\n)\nDELETE FROM login_sessions WHERE id IN (\n  SELECT id FROM ranked WHERE rn > 1\n);\n\n-- Rank employees by salary within each department\nSELECT name, department, salary,\n  RANK() OVER (PARTITION BY department ORDER BY salary DESC) AS rank,\n  DENSE_RANK() OVER (PARTITION BY department ORDER BY salary DESC) AS dense_rank\nFROM employees;\n\n name   | dept    | salary | rank | dense_rank\n--------+---------+--------+------+-----------\n Alice  | Eng     | 150000 | 1    | 1\n Bob    | Eng     | 140000 | 2    | 2\n Carol  | Eng     | 140000 | 2    | 2  -- ties get same rank\n Dave   | Eng     | 130000 | 4    | 3",
+            stepByStep: [
+              "ROW_NUMBER() — unique sequential number per partition (no ties)",
+              "RANK() — same rank for ties, but SKIPS numbers (1,1,3)",
+              "DENSE_RANK() — same rank for ties, does NOT skip (1,1,2)",
+              "PARTITION BY divides rows into groups (like GROUP BY but without collapsing)",
+              "ORDER BY within OVER() determines the sequence"
+            ],
+            tryIt: "SELECT name, salary, RANK() OVER (ORDER BY salary DESC) FROM employees;",
+            commonFlags: [
+              { flag: "ROW_NUMBER()", description: "Unique row number per partition" },
+              { flag: "RANK()", description: "Rank with ties, skips numbers" },
+              { flag: "DENSE_RANK()", description: "Rank with ties, no skipping" },
+              { flag: "NTILE(n)", description: "Divide rows into n buckets" },
+              { flag: "PARTITION BY col", description: "Reset the counter for each group" }
+            ]
+          },
+          {
+            command: "LAG LEAD SUM OVER",
+            description: "Access neighboring rows and running totals — compare values across rows without self-joins.",
+            syntax: "LAG(col, offset) OVER (ORDER BY col) / SUM(col) OVER (PARTITION BY col ORDER BY col)",
+            syntaxParts: [
+              { label: "func", value: "LAG(col) / LEAD(col) / SUM(col) OVER(...)", color: "text-cyber-primary" },
+              { label: "keyword", value: "OVER (", color: "text-cyber-warning" },
+              { label: "keyword", value: "ORDER BY col)", color: "text-cyber-accent" }
+            ],
+            example: "-- Day-over-day revenue change\nSELECT\n  DATE(created_at) AS day,\n  SUM(total) AS revenue,\n  LAG(SUM(total), 1) OVER (ORDER BY DATE(created_at)) AS prev_day,\n  SUM(total) - LAG(SUM(total), 1) OVER (ORDER BY DATE(created_at)) AS change\nFROM orders\nGROUP BY DATE(created_at)\nORDER BY day;\n\n day        | revenue | prev_day | change\n------------+---------+----------+--------\n 2025-01-01 | 12000   | NULL     | NULL\n 2025-01-02 | 14500   | 12000    | 2500\n 2025-01-03 | 11000   | 14500    | -3500\n\n-- Running total of sales per month\nSELECT\n  DATE_TRUNC('month', created_at) AS month,\n  total,\n  SUM(total) OVER (ORDER BY created_at) AS running_total\nFROM orders;",
+            stepByStep: [
+              "LAG(col, n) — access value from n rows BEFORE current row",
+              "LEAD(col, n) — access value from n rows AFTER current row",
+              "SUM(col) OVER (ORDER BY col) — running total (cumulative sum)",
+              "AVG(col) OVER (ORDER BY col) — running average",
+              "Without PARTITION BY, the window is the ENTIRE result set",
+              "Default offset is 1 if not specified"
+            ],
+            tryIt: "SELECT date, revenue, LAG(revenue) OVER (ORDER BY date) AS prev_day FROM daily_sales ORDER BY date;",
+            commonFlags: [
+              { flag: "LAG(col, offset, default)", description: "Access previous row value" },
+              { flag: "LEAD(col, offset, default)", description: "Access next row value" },
+              { flag: "SUM(col) OVER (ORDER BY col)", description: "Running total" },
+              { flag: "AVG(col) OVER (ORDER BY col ROWS ...)", description: "Moving average" },
+              { flag: "FIRST_VALUE(col)", description: "First value in the window" },
+              { flag: "LAST_VALUE(col)", description: "Last value in the window" }
+            ]
+          }
+        ]
+      },
+      {
+        id: "sql-advanced",
+        title: "Advanced SQL",
+        description: "Transactions, indexes, views, set operations, and query optimization — production-level SQL skills.",
+        commands: [
+          {
+            command: "Transactions",
+            description: "Group multiple operations into an atomic unit — all succeed or all roll back. Critical for data integrity.",
+            syntax: "BEGIN; ... COMMIT; / ROLLBACK;",
+            syntaxParts: [
+              { label: "keyword", value: "BEGIN;", color: "text-cyber-primary" },
+              { label: "stmt", value: "UPDATE ...; INSERT ...;", color: "text-cyber-purple" },
+              { label: "keyword", value: "COMMIT;  -- or ROLLBACK;", color: "text-cyber-warning" }
+            ],
+            example: "-- Transfer $500 between accounts (must be atomic)\nBEGIN;\nUPDATE accounts SET balance = balance - 500 WHERE id = 1;\nUPDATE accounts SET balance = balance + 500 WHERE id = 2;\n-- If the second UPDATE fails, the first is rolled back\nCOMMIT;\n\n-- With error handling (PostgreSQL)\nBEGIN;\nSAVEPOINT before_update;\nUPDATE inventory SET quantity = quantity - 10 WHERE product_id = 100;\n-- Check if inventory went negative:\nROLLBACK TO SAVEPOINT before_update;\n-- Fix and retry...\nCOMMIT;",
+            stepByStep: [
+              "BEGIN — start a new transaction",
+              "COMMIT — save all changes made in the transaction",
+              "ROLLBACK — undo all changes made since BEGIN",
+              "SAVEPOINT name — set a checkpoint within a transaction",
+              "ROLLBACK TO SAVEPOINT — undo to a checkpoint without ending the transaction",
+              "In PostgreSQL, every statement is auto-committed unless wrapped in BEGIN...COMMIT",
+              "Always use transactions for multi-step writes that must be consistent"
+            ],
+            tryIt: "BEGIN; UPDATE accounts SET balance = balance - 100 WHERE id = 1; ROLLBACK; -- test without committing",
+            commonFlags: [
+              { flag: "BEGIN / START TRANSACTION", description: "Begin a transaction" },
+              { flag: "COMMIT", description: "Save all changes" },
+              { flag: "ROLLBACK", description: "Undo all changes" },
+              { flag: "SAVEPOINT name", description: "Set a savepoint within a transaction" },
+              { flag: "ROLLBACK TO SAVEPOINT", description: "Roll back to a savepoint" }
+            ]
+          },
+          {
+            command: "UNION INTERSECT EXCEPT",
+            description: "Set operations — combine results from multiple queries vertically.",
+            syntax: "query1 UNION / INTERSECT / EXCEPT query2",
+            syntaxParts: [
+              { label: "q1", value: "query1", color: "text-cyber-purple" },
+              { label: "op", value: "UNION | INTERSECT | EXCEPT", color: "text-cyber-primary" },
+              { label: "q2", value: "query2", color: "text-cyber-purple" }
+            ],
+            example: "-- Users who are either customers OR employees (or both)\nSELECT name, email FROM customers\nUNION\nSELECT name, email FROM employees;\n\n-- Users who are BOTH customers AND employees\nSELECT name, email FROM customers\nINTERSECT\nSELECT name, email FROM employees;\n\n-- Customers who are NOT employees\nSELECT name, email FROM customers\nEXCEPT\nSELECT name, email FROM employees;\n\n-- UNION ALL includes duplicates (UNION removes them)\nSELECT city FROM customers\nUNION ALL\nSELECT city FROM suppliers;",
+            stepByStep: [
+              "UNION — combines results, removing duplicates (slower)",
+              "UNION ALL — combines results, keeping all rows (faster)",
+              "INTERSECT — returns rows that appear in BOTH queries",
+              "EXCEPT — returns rows from the first query that are NOT in the second",
+              "All queries must have the SAME NUMBER of columns with compatible types",
+              "ORDER BY goes at the very end and applies to the combined result"
+            ],
+            tryIt: "SELECT id FROM table1 EXCEPT SELECT id FROM table2; -- find IDs only in table1",
+            commonFlags: [
+              { flag: "UNION", description: "Combine results, remove duplicates" },
+              { flag: "UNION ALL", description: "Combine results, keep duplicates" },
+              { flag: "INTERSECT", description: "Return rows common to both queries" },
+              { flag: "EXCEPT", description: "Return rows in first but not second query" }
+            ]
+          },
+          {
+            command: "EXPLAIN CREATE INDEX",
+            description: "Understand and optimize query performance with execution plans and indexes.",
+            syntax: "EXPLAIN ANALYZE SELECT ... / CREATE INDEX ON table (col);",
+            syntaxParts: [
+              { label: "keyword", value: "EXPLAIN ANALYZE", color: "text-cyber-primary" },
+              { label: "query", value: "SELECT ...", color: "text-cyber-purple" },
+              { label: "keyword", value: "CREATE INDEX", color: "text-cyber-warning" },
+              { label: "detail", value: "ON table (col);", color: "text-cyber-accent" }
+            ],
+            example: "-- See the execution plan\nEXPLAIN ANALYZE SELECT * FROM orders WHERE customer_id = 123;\n\n                               QUERY PLAN\n-------------------------------------------------------------------------\n Seq Scan on orders  (cost=0.00..435.00 rows=1 width=36)\n   (actual time=0.45..12.34 rows=50 loops=1)\n   Filter: (customer_id = 123)\n   Rows Removed by Filter: 10000\n Planning Time: 0.08 ms\n Execution Time: 12.45 ms\n\n-- Add an index to speed up the query\nCREATE INDEX idx_orders_customer ON orders(customer_id);\n\n-- After index: the same query uses Index Scan instead of Seq Scan\nEXPLAIN ANALYZE SELECT * FROM orders WHERE customer_id = 123;\n\n Index Scan using idx_orders_customer on orders\n   (cost=0.28..8.29 rows=1 width=36)\n   (actual time=0.05..0.12 rows=50 loops=1)\n Execution Time: 0.35 ms  -- 35x faster!",
+            stepByStep: [
+              "EXPLAIN shows the query plan WITHOUT running it",
+              "EXPLAIN ANALYZE runs the query AND shows actual timing",
+              "Seq Scan = sequential table scan (slow on large tables — reads every row)",
+              "Index Scan = uses an index to find rows quickly",
+              "CREATE INDEX idx_name ON table(column) — creates a B-tree index",
+              "Indexes speed up SELECT/WHERE/JOIN but slow down INSERT/UPDATE/DELETE",
+              "Use CREATE INDEX CONCURRENTLY to avoid locking the table in production"
+            ],
+            tryIt: "EXPLAIN SELECT * FROM orders WHERE total > 100;",
+            commonFlags: [
+              { flag: "EXPLAIN", description: "Show query plan without executing" },
+              { flag: "EXPLAIN ANALYZE", description: "Show query plan with actual timing" },
+              { flag: "CREATE INDEX", description: "Create a B-tree index" },
+              { flag: "CREATE UNIQUE INDEX", description: "Create a unique constraint index" },
+              { flag: "CREATE INDEX CONCURRENTLY", description: "Create index without locking writes" },
+              { flag: "DROP INDEX", description: "Remove an index" }
             ]
           }
         ]
