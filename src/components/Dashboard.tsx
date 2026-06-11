@@ -4,7 +4,7 @@ import Terminal from './Terminal';
 import Wizard from './Wizard';
 import { useAuth } from './Auth';
 
-type ViewMode = 'missions' | 'wizard-linux' | 'wizard-powershell' | 'wizard-kql' | 'wizard-vim' | 'wizard-sql';
+type ViewMode = 'missions' | 'sql-missions' | 'wizard-linux' | 'wizard-powershell' | 'wizard-kql' | 'wizard-vim' | 'wizard-sql';
 
 const LogoutBtn: React.FC = () => {
   const { user, logout } = useAuth();
@@ -133,6 +133,19 @@ const Dashboard: React.FC = () => {
               <div className="text-xs text-cyber-muted">Level-based challenges</div>
             </button>
             <div className="border-t border-cyber-border/30 my-2" />
+            <h2 className="text-xs font-bold text-cyber-muted uppercase tracking-widest px-2 mb-2">Missions</h2>
+            <button
+              onClick={() => { setViewMode('sql-missions'); setSelectedMission(null); }}
+              className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
+                viewMode === 'sql-missions'
+                  ? 'bg-cyber-primary/20 text-cyber-primary border border-cyber-primary/30'
+                  : 'text-cyber-text hover:bg-cyber-border/30'
+              }`}
+            >
+              <div className="font-medium">SQL Missions</div>
+              <div className="text-xs text-cyber-muted">16 SQL challenges across all levels</div>
+            </button>
+            <div className="border-t border-cyber-border/30 my-2" />
             <h2 className="text-xs font-bold text-cyber-muted uppercase tracking-widest px-2 mb-2">Levels</h2>
             {curriculum.map((level, i) => (
               <button
@@ -174,6 +187,41 @@ const Dashboard: React.FC = () => {
           <Wizard trackId="vim" onBack={() => setViewMode('missions')} />
         ) : viewMode === 'wizard-sql' ? (
           <Wizard trackId="sql" onBack={() => setViewMode('missions')} />
+        ) : viewMode === 'sql-missions' ? (
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="mb-6">
+              <h1 className="text-2xl font-bold text-cyber-primary">SQL Missions</h1>
+              <p className="text-sm text-cyber-muted mt-1">Real-world SQL challenges from beginner to advanced</p>
+            </div>
+            <div className="space-y-3">
+              {curriculum.flatMap(l => l.missions.filter(m => m.category === 'SQL')).map(m => (
+                <div key={m.id} className={`p-4 rounded border transition-colors ${
+                  completedMissions.includes(m.id)
+                    ? 'border-cyber-primary/30 bg-cyber-primary/10'
+                    : 'border-cyber-border hover:border-cyber-primary/50 bg-cyber-card/50'
+                }`}>
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-cyber-text">{m.title}</h3>
+                        <span className="text-xs text-cyber-muted">Level {m.levelNum}</span>
+                      </div>
+                      <p className="text-sm text-cyber-muted mt-1">{m.subtitle}</p>
+                      <p className="text-xs text-cyber-muted mt-2 line-clamp-2">{m.story.slice(0, 120)}...</p>
+                    </div>
+                    <div className="flex flex-col items-end gap-2 ml-4">
+                      <span className="text-xs bg-cyber-primary/20 text-cyber-primary px-2 py-0.5 rounded font-medium">{m.xpReward} XP</span>
+                      {completedMissions.includes(m.id) ? (
+                        <span className="text-xs text-cyber-primary font-medium">✓ Completed</span>
+                      ) : (
+                        <button onClick={() => { setCurrentLevel(m.levelNum); setSelectedMission(m); setViewMode('missions'); }} className="bg-cyber-primary text-black px-4 py-1.5 rounded text-sm font-bold hover:bg-cyber-primary/80 transition-colors">Start</button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         ) : !selectedMission ? (
           <div className="flex-1 overflow-y-auto p-6">
             <div className="mb-6">
