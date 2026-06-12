@@ -229,7 +229,7 @@ const Dashboard: React.FC = () => {
             <button
               onClick={() => { setViewMode('missions'); setSelectedMission(null); }}
               className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
-                viewMode === 'missions'
+                viewMode === 'missions' || viewMode === 'sql-missions'
                   ? 'bg-cyber-primary/20 text-cyber-primary border border-cyber-primary/30'
                   : 'text-cyber-text hover:bg-cyber-border/30'
               }`}
