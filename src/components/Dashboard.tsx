@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { curriculum, Mission } from '../data/curriculum';
+import { curriculum as staticCurriculum, Mission, Level } from '../data/curriculum';
 import Terminal from './Terminal';
 import Wizard from './Wizard';
 import { useAuth } from './Auth';
 import { supabase } from '../lib/supabase';
+import { fetchLevels } from '../lib/data';
+import { seedDatabase, checkDataExists } from '../lib/seed';
 
 type ViewMode = 'missions' | 'sql-missions' | 'wizard-linux' | 'wizard-powershell' | 'wizard-kql' | 'wizard-vim' | 'wizard-sql';
 
@@ -18,6 +20,11 @@ const LogoutBtn: React.FC = () => {
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
+  const [levels, setLevels] = useState<Level[]>(staticCurriculum);
+  const [dataLoading, setDataLoading] = useState(true);
+  const [seeding, setSeeding] = useState(false);
+  const [seedMessage, setSeedMessage] = useState('');
+  const [showSeedPrompt, setShowSeedPrompt] = useState(false);
   const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
   const [completedMissions, setCompletedMissions] = useState<string[]>([]);
   const [xp, setXp] = useState(0);
@@ -26,7 +33,7 @@ const Dashboard: React.FC = () => {
   const [currentLevel, setCurrentLevel] = useState(0);
   const [viewMode, setViewMode] = useState<ViewMode>('missions');
 
-  const levelInfo = curriculum[currentLevel];
+  const levelInfo = levels[currentLevel];
 
   useEffect(() => {
     if (!user) return;
@@ -47,6 +54,55 @@ const Dashboard: React.FC = () => {
         setLoaded(true);
       });
   }, [user?.id]);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+
+    async function loadData() {
+      try {
+        const fetchedLevels = await fetchLevels();
+        if (cancelled) return;
+
+        if (fetchedLevels.length > 0) {
+          setLevels(fetchedLevels);
+          setShowSeedPrompt(false);
+        } else {
+          setLevels(staticCurriculum);
+          const exists = await checkDataExists();
+          if (!exists.levels || !exists.tracks) {
+            setShowSeedPrompt(true);
+          }
+        }
+      } catch {
+        if (!cancelled) {
+          setLevels(staticCurriculum);
+          setShowSeedPrompt(false);
+        }
+      } finally {
+        if (!cancelled) setDataLoading(false);
+      }
+    }
+
+    loadData();
+    return () => { cancelled = true; };
+  }, [user?.id]);
+
+  const handleSeed = async () => {
+    setSeeding(true);
+    setSeedMessage('Seeding database...');
+    try {
+      const msgs = await seedDatabase();
+      setSeedMessage(msgs.join(', '));
+      setShowSeedPrompt(false);
+      const fetchedLevels = await fetchLevels();
+      if (fetchedLevels.length > 0) setLevels(fetchedLevels);
+    } catch (err) {
+      setSeedMessage(`Error: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setSeeding(false);
+    }
+  };
 
   const saveProgress = useCallback(async (missions: string[], totalXp: number) => {
     if (!user || !loaded) return;
@@ -83,12 +139,34 @@ const Dashboard: React.FC = () => {
     setSelectedMission(null);
   };
 
+  if (dataLoading) {
+    return (
+      <div className="flex h-screen bg-cyber-bg items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin text-cyber-primary text-4xl mb-4">⟳</div>
+          <p className="text-cyber-muted">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen bg-cyber-bg">
       <aside className="w-64 bg-cyber-card border-r border-cyber-border flex flex-col">
         <div className="p-4 border-b border-cyber-border">
           <h1 className="text-2xl font-bold text-cyber-primary">TermQuest</h1>
           <p className="text-xs text-cyber-muted">Interactive Shell RPG</p>
+          {showSeedPrompt && !seeding && (
+            <button
+              onClick={handleSeed}
+              className="mt-2 w-full text-xs bg-cyber-warning/20 text-cyber-warning border border-cyber-warning/30 px-2 py-1 rounded hover:bg-cyber-warning/30 transition-colors"
+            >
+              Initialize Database
+            </button>
+          )}
+          {seeding && (
+            <p className="mt-2 text-xs text-cyber-accent animate-pulse">{seedMessage}</p>
+          )}
         </div>
         <div className="flex-1 overflow-y-auto">
           <nav className="p-3 space-y-1">
@@ -170,9 +248,9 @@ const Dashboard: React.FC = () => {
               }`}
             >
               <div className="font-medium">SQL Missions</div>
-              <div className="text-xs text-cyber-muted">16 SQL challenges across all levels</div>
+              <div className="text-xs text-cyber-muted">SQL challenges across all levels</div>
             </button>
-            {curriculum.map((level, i) => (
+            {levels.map((level, i) => (
               <button
                 key={i}
                 onClick={() => { setCurrentLevel(i); setSelectedMission(null); setViewMode('missions'); }}
@@ -183,7 +261,7 @@ const Dashboard: React.FC = () => {
                 }`}
               >
                 <div className="font-medium">{level.rank}</div>
-                <div className="text-xs text-cyber-muted">Level {i} - {level.name}</div>
+                <div className="text-xs text-cyber-muted">Level {level.num} - {level.name}</div>
               </button>
             ))}
           </nav>
@@ -220,7 +298,7 @@ const Dashboard: React.FC = () => {
               <p className="text-sm text-cyber-muted mt-1">Real-world SQL challenges from beginner to advanced</p>
             </div>
             <div className="space-y-3">
-              {curriculum.flatMap(l => l.missions.filter(m => m.category === 'SQL')).map(m => (
+              {levels.flatMap(l => l.missions.filter(m => m.category === 'SQL')).map(m => (
                 <div key={m.id} className={`p-4 rounded border transition-colors ${
                   completedMissions.includes(m.id)
                     ? 'border-cyber-primary/30 bg-cyber-primary/10'
@@ -240,7 +318,7 @@ const Dashboard: React.FC = () => {
                       {completedMissions.includes(m.id) ? (
                         <span className="text-xs text-cyber-primary font-medium">✓ Completed</span>
                       ) : (
-                        <button onClick={() => { setCurrentLevel(m.levelNum); setSelectedMission(m); setViewMode('missions'); }} className="bg-cyber-primary text-black px-4 py-1.5 rounded text-sm font-bold hover:bg-cyber-primary/80 transition-colors">Start</button>
+                        <button onClick={() => { setCurrentLevel(levels.findIndex(l => l.num === m.levelNum)); setSelectedMission(m); setViewMode('missions'); }} className="bg-cyber-primary text-black px-4 py-1.5 rounded text-sm font-bold hover:bg-cyber-primary/80 transition-colors">Start</button>
                       )}
                     </div>
                   </div>
@@ -293,7 +371,7 @@ const Dashboard: React.FC = () => {
             </div>
             {currentLevel > 0 && (
               <div className="mt-6 text-xs text-cyber-muted text-center">
-                Showing Level {currentLevel}. Previous levels contained {curriculum.slice(0, currentLevel).reduce((a, l) => a + l.missions.length, 0)} completed missions.
+                Showing Level {levels[currentLevel].num}. Previous levels contained {levels.slice(0, currentLevel).reduce((a, l) => a + l.missions.length, 0)} completed missions.
               </div>
             )}
           </div>

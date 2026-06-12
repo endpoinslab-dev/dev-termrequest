@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { wizardTracks, CommandEntry, WizardModule } from '../data/wizard';
+import { wizardTracks as staticTracks, CommandEntry, WizardModule, WizardTrack } from '../data/wizard';
 import { ShellInterpreter, ShellState } from '../utils/interpreter';
 
 function initialPlaygroundState(): ShellState {
@@ -34,15 +34,86 @@ interface WizardProps {
 }
 
 const Wizard: React.FC<WizardProps> = ({ trackId, onBack }) => {
-  const track = wizardTracks.find(t => t.id === trackId)!;
-  const [selectedModule, setSelectedModule] = useState<WizardModule>(track.modules[0]);
+  const [track, setTrack] = useState<WizardTrack | null>(() => {
+    return staticTracks.find(t => t.id === trackId) ?? null;
+  });
+  const [loading, setLoading] = useState(track === null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadTrack() {
+      try {
+        const { fetchWizardTracks } = await import('../lib/data');
+        const fetched = await fetchWizardTracks();
+        if (cancelled) return;
+        const found = fetched.find(t => t.id === trackId);
+        if (found) setTrack(found);
+      } catch {
+        if (!cancelled) {
+          const fallback = staticTracks.find(t => t.id === trackId) ?? null;
+          setTrack(fallback);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    loadTrack();
+    return () => { cancelled = true; };
+  }, [trackId]);
+
+  const [selectedModule, setSelectedModule] = useState<WizardModule | null>(null);
   const [selectedCommandIdx, setSelectedCommandIdx] = useState(0);
-  const selectedCommand = selectedModule.commands[selectedCommandIdx] || selectedModule.commands[0];
+
+  useEffect(() => {
+    if (track && track.modules.length > 0) {
+      setSelectedModule(track.modules[0]);
+      setSelectedCommandIdx(0);
+    }
+  }, [track]);
 
   const handleModuleChange = (mod: WizardModule) => {
     setSelectedModule(mod);
     setSelectedCommandIdx(0);
   };
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="animate-spin text-cyber-primary text-4xl">⟳</div>
+      </div>
+    );
+  }
+
+  if (!track) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <p className="text-cyber-danger">Track not found</p>
+      </div>
+    );
+  }
+
+  if (!selectedModule && track.modules.length > 0) {
+    return null;
+  }
+
+  if (track.modules.length === 0) {
+    return (
+      <div className="flex-1 flex flex-col min-h-0">
+        <header className="p-4 border-b border-cyber-border flex justify-between items-center bg-cyber-card/80">
+          <div>
+            <h2 className="text-lg font-bold text-cyber-primary">{track.title}</h2>
+            <p className="text-xs text-cyber-muted">{track.description}</p>
+          </div>
+          <button onClick={onBack} className="text-sm text-cyber-muted hover:text-cyber-text border border-cyber-border px-3 py-1 rounded">← Back to Missions</button>
+        </header>
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-cyber-muted">No modules available for this track.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
@@ -63,7 +134,7 @@ const Wizard: React.FC<WizardProps> = ({ trackId, onBack }) => {
                 key={mod.id}
                 onClick={() => handleModuleChange(mod)}
                 className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
-                  selectedModule.id === mod.id
+                  selectedModule?.id === mod.id
                     ? 'bg-cyber-accent/20 text-cyber-accent border border-cyber-accent/30'
                     : 'text-cyber-text hover:bg-cyber-border/30'
                 }`}
@@ -76,13 +147,15 @@ const Wizard: React.FC<WizardProps> = ({ trackId, onBack }) => {
         </aside>
 
         <div className="flex-1 flex flex-col min-h-0">
-          <CommandView
-            key={selectedModule.id + '-' + selectedCommandIdx}
-            command={selectedCommand}
-            moduleCommands={selectedModule.commands}
-            selectedIdx={selectedCommandIdx}
-            onSelectCommand={setSelectedCommandIdx}
-          />
+          {selectedModule && (
+            <CommandView
+              key={selectedModule.id + '-' + selectedCommandIdx}
+              command={selectedModule.commands[selectedCommandIdx] || selectedModule.commands[0]}
+              moduleCommands={selectedModule.commands}
+              selectedIdx={selectedCommandIdx}
+              onSelectCommand={setSelectedCommandIdx}
+            />
+          )}
         </div>
       </div>
     </div>
